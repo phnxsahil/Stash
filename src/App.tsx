@@ -10,7 +10,7 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { api } from './lib/api';
 import { supabase } from './lib/supabase';
 
@@ -80,6 +80,16 @@ export default function App() {
     };
   });
 
+  // Global Error Handler
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global Error Caught:", event.error);
+      toast.error(`App Error: ${event.message || 'Something went wrong'}`);
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
   // Handle Share Target on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -130,19 +140,25 @@ export default function App() {
   }, []);
 
   const handleAuthSuccess = async (user: any) => {
+    console.log("Auth: Successful login for", user.email);
+
+    // Set basic info first so the UI transitions immediately
+    setState((prev) => ({
+      ...prev,
+      isLoggedIn: true,
+      userEmail: user.email || '',
+      userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+      currentView: 'app',
+    }));
+
+    // Then try to fetch enriched data in the background
     try {
-      const userData = await api.getUserData();
       const playlists = await api.getUserPlaylists();
-      setState((prev) => ({
-        ...prev,
-        isLoggedIn: true,
-        userName: userData.name,
-        userEmail: userData.email,
-        playlists,
-        currentView: 'app',
-      }));
+      setState((prev) => ({ ...prev, playlists }));
+      loadHistory();
     } catch (err) {
-      console.error("Auth Success Callback Error:", err);
+      console.warn("Auth: Failed to fetch enriched user data (playlists/history):", err);
+      // We don't block the UI here, the user is already in the app
     }
   };
 
@@ -162,7 +178,6 @@ export default function App() {
     try {
       toast.loading('Redirecting to Spotify...');
       await api.connectSpotify();
-      // Browser will redirect, so no state update here
     } catch (error) {
       console.error('Failed to connect:', error);
       toast.dismiss();

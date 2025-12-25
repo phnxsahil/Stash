@@ -70,15 +70,26 @@ const mockMatches: SongMatch[] = [
 
 export const api = {
   async connectSpotify(): Promise<void> {
-    console.log('API: connectSpotify()');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'spotify',
-      options: {
-        scopes: 'user-library-read user-library-modify playlist-read-private playlist-modify-public',
-        redirectTo: window.location.origin,
+    const redirectUrl = window.location.origin;
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'spotify',
+        options: {
+          scopes: 'user-library-read user-library-modify playlist-read-private playlist-modify-public',
+          redirectTo: redirectUrl,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.assign(data.url);
       }
-    });
-    if (error) throw error;
+    } catch (err: any) {
+      console.error('API: connectSpotify() error:', err);
+      throw err;
+    }
   },
 
   async logoutUser(): Promise<void> {
