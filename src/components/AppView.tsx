@@ -31,6 +31,7 @@ interface AppViewProps {
   onToggleAutoAdd: (value: boolean) => void;
   onToggleTheme: (value: 'light' | 'dark') => void;
   onOpenSettings: () => void;
+  processingStatus?: string;
 }
 
 export function AppView({
@@ -44,6 +45,7 @@ export function AppView({
   onToggleAutoAdd,
   onToggleTheme,
   onOpenSettings,
+  processingStatus,
 }: AppViewProps) {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -272,7 +274,7 @@ export function AppView({
                 <Switch
                   id="theme-toggle"
                   checked={theme === 'dark'}
-                  onCheckedChange={(checked) => onToggleTheme(checked ? 'dark' : 'light')}
+                  onCheckedChange={(checked: boolean) => onToggleTheme(checked ? 'dark' : 'light')}
                   className="data-[state=checked]:bg-[#1DB954] mt-1"
                 />
               </div>
@@ -296,11 +298,10 @@ export function AppView({
                 <Button
                   onClick={() => onToggleAutoAdd(!autoAddTopMatch)}
                   variant="outline"
-                  className={`w-full h-12 rounded-xl transition-all ${
-                    autoAddTopMatch
-                      ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1DB954] hover:bg-[#1DB954]/30'
-                      : 'border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/5'
-                  }`}
+                  className={`w-full h-12 rounded-xl transition-all ${autoAddTopMatch
+                    ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1DB954] hover:bg-[#1DB954]/30'
+                    : 'border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/5'
+                    }`}
                 >
                   {autoAddTopMatch ? (
                     <>
@@ -344,6 +345,34 @@ export function AppView({
 
       {/* Floating Stash Button - Mobile Only */}
       {isMobile && <FloatingStashButton onClick={handleFloatingButtonClick} />}
+
+      {/* Processing Overlay */}
+      {processingStatus && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md transition-all animate-in fade-in">
+          <div className="text-center space-y-6 p-8 rounded-3xl bg-white/5 border border-white/10 shadow-2xl scale-in-center">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 rounded-full border-4 border-[#1DB954]/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-t-[#1DB954] border-r-[#1DB954] animate-spin"></div>
+              <Sparkles className="absolute inset-0 m-auto w-10 h-10 text-[#1DB954] animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-white">Stashing...</h3>
+              <p className="text-[#1DB954] font-medium tracking-wide animate-pulse h-6">
+                {processingStatus}
+              </p>
+            </div>
+            <div className="flex gap-2 justify-center">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 rounded-full bg-[#1DB954] animate-bounce"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
