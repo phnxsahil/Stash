@@ -43,53 +43,45 @@ def health_check():
     return {"status": "Antigravity Engine Online 🟢"}
 
 
+from shazamio import Shazam
+
 @app.post("/recognize")
-def recognize_reel(request: ReelRequest):
+async def recognize_reel(request: ReelRequest):
     print(f"🚀 Processing: {request.url}")
 
-    # 1. DOWNLOAD AUDIO (Force AI Listening)
+    # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(request.url)
     if not audio_filename:
-        # Fallback error (client-side will handle 500)
         raise HTTPException(status_code=500, detail="Audio download failed")
 
     try:
-        # 2. ASK GEMINI (Strict Prompt)
-        print("🧠 Asking Gemini...")
-        audio_file = genai.upload_file(path=audio_filename)
+        # 2. ASK SHAZAM (Audio Fingerprinting)
+        print("🎵 Fingerprinting with Shazam...")
+        shazam = Shazam()
         
-        while audio_file.state.name == "PROCESSING":
-            time.sleep(1)
-            audio_file = genai.get_file(audio_file.name)
-
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content([
-            "Listen to this audio. Identify the ORIGINAL song name and artist. "
-            "Ignore remixes, speed up/slow down effects, or voiceovers. "
-            "If unsure, return null. Return JSON: {'track': 'Title', 'artist': 'Name'}",
-            audio_file
-        ])
+        # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
+        # If running locally on Windows without ffmpeg, this step might fail if the file format isn't supported natively.
+        # However, shazamio often handles many formats or throws readable errors.
         
-        # Parse AI Result
-        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        try:
-             ai_data = json.loads(cleaned_text)
-        except:
-             # Resilience for bad JSON
-             import re
-             match = re.search(r'\{.*\}', cleaned_text, re.DOTALL)
-             ai_data = json.loads(match.group()) if match else {}
-
-        print(f"🤖 AI Identified: {ai_data}")
+        out = await shazam.recognize_song(audio_filename)
         
-        # Cleanup audio
+        # Cleanup audio immediately
         if os.path.exists(audio_filename): os.remove(audio_filename)
 
-        if not ai_data.get('track'):
-            return {"success": False, "error": "AI could not identify song"}
+        # 3. PARSE SHAZAM RESULT
+        if not out.get('matches'):
+            print("❌ Shazam found no matches.")
+            return {"success": False, "error": "Shazam could not identify song"}
 
-        # 3. VERIFY WITH SPOTIFY (Popularity Sort)
-        return search_spotify_strict(ai_data['track'], ai_data['artist'])
+        track_info = out['track']
+        shazam_title = track_info['title']
+        shazam_artist = track_info['subtitle']
+        
+        print(f"🎯 Shazam Match: {shazam_title} by {shazam_artist}")
+
+        # 4. VERIFY WITH SPOTIFY (Get Playable URI)
+        # We still search Spotify to get the URI for the frontend player/saving
+        return search_spotify_strict(shazam_title, shazam_artist)
 
     except Exception as e:
         print(f"❌ Error: {e}")
