@@ -8,3 +8,4 @@ requests
 pydantic
 ffmpeg-python
 python-multipart
+shazamio
