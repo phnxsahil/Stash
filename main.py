@@ -1,5 +1,6 @@
 import os
 import time
+# Trigger reload
 import json
 import glob
 from fastapi import FastAPI, HTTPException
@@ -11,6 +12,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import yt_dlp
 import shutil
+from static_ffmpeg import add_paths
+add_paths()
 
 # 1. Load Keys
 load_dotenv()
@@ -56,7 +59,7 @@ async def recognize_reel(request: ReelRequest):
 
     try:
         # 2. ASK SHAZAM (Audio Fingerprinting)
-        print("🎵 Fingerprinting with Shazam...")
+        print(f"🎵 Fingerprinting with Shazam: {audio_filename}")
         shazam = Shazam()
         
         # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
@@ -139,5 +142,118 @@ def search_spotify_strict(track, artist):
         "album_art": best['album']['images'][0]['url'],
         "spotify_uri": best['uri'],
         "spotify_url": best['external_urls']['spotify'],
+        "preview_url": best.get('preview_url'), 
         "confidence": 0.99
     }
+
+class SaveWebTrackRequest(BaseModel):
+    token: str
+    track_id: str
+    playlist_id: str
+
+# Helper: AI Genre Detection
+def detect_genre_with_gemini(track_name, artist_name):
+    try:
+        prompt = f"What is the primary music genre of the song '{track_name}' by '{artist_name}'? Return only ONE word (e.g., Techno, House, Pop, Rock, Ambient). Do not write sentences."
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        return response.text.strip().replace(".", "")
+    except Exception as e:
+        print(f"⚠️ Gemini Genre Error: {e}")
+        return "Unknown"
+
+class AnalyzeVibeRequest(BaseModel):
+    songs: list[str] # List of "Song - Artist" strings
+
+@app.post("/analyze_vibe")
+def analyze_vibe_summary(request: AnalyzeVibeRequest):
+    print(f"🔮 Analyzing Vibe for {len(request.songs)} songs...")
+    if not request.songs:
+        return {"vibe": "No music yet! Start stashing to find your vibe."}
+    
+    try:
+        song_list = ", ".join(request.songs[:20]) # Limit to last 20 to save tokens
+        prompt = f"Here is a user's recently liked music: {song_list}. In one short, fun sentence (max 10 words), describe their current 'music vibe' or mood. Be creative like Spotify Wrapped. Example: 'Melancholic late-night techno drive by yourself.'"
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        vibe = response.text.strip()
+        print(f"✨ Vibe Result: {vibe}")
+        return {"vibe": vibe}
+    except Exception as e:
+        print(f"❌ Vibe Error: {e}")
+        return {"vibe": "Eclectic and mysterious."}
+
+@app.post("/save_track")
+def save_track_to_spotify(request: SaveWebTrackRequest):
+    print(f"💾 Saving Track: {request.track_id} to Playlist: {request.playlist_id}")
+    
+    try:
+        # 1. Initialize User Context
+        user_sp = spotipy.Spotify(auth=request.token)
+        user_id = user_sp.current_user()['id']
+        
+        target_playlist_id = request.playlist_id
+        
+        # Always get track info first
+        track_info = user_sp.track(request.track_id)
+        track_name = track_info['name']
+        artist_name = track_info['artists'][0]['name']
+
+        # 2. Detect Genre (Always run this now for Analytics)
+        genre = detect_genre_with_gemini(track_name, artist_name)
+        print(f"🤖 Genre: {genre}")
+        
+        playlist_name = "Stash: " + genre
+
+        # 3. Smart Sort Logic (Playlist overriding)
+        if request.playlist_id == "smart_sort":
+            print("🧠 Smart Sort Engaged.")
+            
+            # Find/Create Playlist
+            playlists = user_sp.current_user_playlists(limit=50)
+            existing_id = None
+            for p in playlists['items']:
+                if p['name'].lower() == playlist_name.lower():
+                    existing_id = p['id']
+                    break
+            
+            if existing_id:
+                target_playlist_id = existing_id
+                print(f"📂 Found existing playlist: {playlist_name}")
+            else:
+                new_playlist = user_sp.user_playlist_create(user_id, playlist_name, public=False)
+                target_playlist_id = new_playlist['id']
+                print(f"✨ Created new playlist: {playlist_name}")
+
+        # 4. Add Track to Target Playlist
+        final_playlist_name = "Liked Songs"
+        
+        if target_playlist_id and target_playlist_id != '1':
+             user_sp.playlist_add_items(target_playlist_id, [f"spotify:track:{request.track_id}"])
+             
+             # If it was Smart Sort, we already have the name
+             if request.playlist_id == "smart_sort":
+                 final_playlist_name = playlist_name
+             else:
+                 # Fetch name for custom ID
+                 try:
+                     pl_details = user_sp.playlist(target_playlist_id)
+                     final_playlist_name = pl_details['name']
+                 except:
+                     final_playlist_name = "Selected Playlist"
+                     
+             print(f"✅ Added to playlist: {final_playlist_name} ({target_playlist_id})")
+        else:
+             user_sp.current_user_saved_tracks_add([request.track_id])
+             print("✅ Added to Liked Songs")
+
+        return {
+            "success": True, 
+            "playlist_id": target_playlist_id, 
+            "playlist_name": final_playlist_name,
+            "genre": genre 
+        }
+
+    except Exception as e:
+        print(f"❌ Save Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
