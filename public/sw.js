@@ -1,4 +1,4 @@
-// const CACHE_VERSION = 'v2'; // Increment this to force cache refresh
+const CACHE_VERSION = 'v2'; // Increment this to force cache refresh
 const CACHE_NAME = `stash-cache-${CACHE_VERSION}`;
 
 // Install event - cache core assets
