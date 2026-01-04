@@ -110,6 +110,18 @@ def download_audio(url):
             }
         }
 
+        # Add cookie support for Instagram authentication
+        cookies_content = os.getenv('YTDLP_COOKIES')
+        if cookies_content:
+            cookie_file = '/tmp/cookies.txt'
+            try:
+                with open(cookie_file, 'w') as f:
+                    f.write(cookies_content)
+                ydl_opts['cookiefile'] = cookie_file
+                print(f"🍪 Using cookies for authentication")
+            except Exception as e:
+                print(f"⚠️ Cookie file creation failed: {e}")
+
         if has_ffmpeg:
             print("🎞️ FFmpeg detected. Downloading mp3...")
             ydl_opts.update({
