@@ -1,0 +1,2 @@
+# Dummy requirements file to satisfy buildbot detection.
+# Real dependencies are in requirements.backend.txt
