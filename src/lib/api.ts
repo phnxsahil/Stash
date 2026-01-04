@@ -90,7 +90,9 @@ export const api = {
         body: JSON.stringify({ url })
       });
 
-      if (!response.ok) throw new Error("Backend Error");
+      if (!response.ok) {
+        throw new Error(`Backend Error: ${response.status} ${response.statusText} from ${API_BASE_URL}/recognize`);
+      }
 
       const data = await response.json();
 
