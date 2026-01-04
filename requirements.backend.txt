@@ -5,6 +5,7 @@ spotipy
 requests
 pydantic
 python-multipart
+python-dotenv
 shazamio
 audioop-lts; python_version >= "3.13"
 static-ffmpeg
