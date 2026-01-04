@@ -274,14 +274,6 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
         </Button>
       </div>
 
-      {/* Debug Overlay */}
-      <div className="fixed bottom-4 right-4 z-[100] bg-black/80 text-white p-4 rounded-lg text-xs font-mono max-w-sm pointer-events-none">
-        <p className="font-bold text-[#1DB954]">Debug Status:</p>
-        <p>Theme: {theme}</p>
-        <p>Supabase: {import.meta.env.VITE_SUPABASE_URL ? 'Configured' : 'Missing URL'}</p>
-        <p>Key: {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing'}</p>
-        <p>Hash: {window.location.hash ? 'Present' : 'Empty'}</p>
-      </div>
     </div>
   );
 }
