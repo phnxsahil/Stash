@@ -1,19 +1,239 @@
+# 🎵 Stash - The Internet's Save Button for Music
 
-  # Music App
+**Instantly save songs from Instagram Reels, TikTok, and YouTube directly to your Spotify library.**
 
-  This is a code bundle for Music App. The original project is available at https://www.figma.com/design/Md0etimDgjrDPm48KBnvlB/Music-App.
+[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://stashyourmusic.vercel.app)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-  ## Running the code
+---
 
-  Run `npm i` to install the dependencies.
+## ✨ Features
 
-  Run `npm run dev` to start the development server.
+- 🎯 **Instant Recognition** - Identify songs from Instagram Reels, TikTok, and YouTube links
+- 🎧 **Direct Spotify Integration** - Save songs directly to your Spotify library or playlists
+- 🧠 **Smart Stash** - Auto-organize songs by genre into custom playlists
+- 📊 **Music Analytics** - Track your listening habits with beautiful stats and mood boards
+- 📱 **PWA Support** - Install as an app on any device
+- 🌓 **Dark/Light Mode** - Fully responsive with theme support
+- 🚀 **Fast & Reliable** - Powered by Shazam audio fingerprinting
 
-  ## Web Share Target Testing
+---
 
-  1. Deploy the app behind HTTPS (Vercel/Netlify) so Android recognizes the manifest and service worker.
-  2. Visit the deployed URL in Chrome for Android and use the browser menu to install the PWA to your home screen.
-  3. Share a link from another app (e.g., Instagram → Share → Stash). Android will launch Stash with the shared URL in the query string.
-  4. The debug badge at the top-left of the screen will display the received payload. Once authentication completes, the app automatically triggers the normal `startProcessing` flow.
-  5. After validating, you can hide or remove the debug badge by deleting the `#debug-console` element from `index.html` and the related code in `App.tsx`.
-  
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ 
+- Python 3.11+
+- Supabase account
+- Spotify Developer account
+- Railway account (for backend hosting)
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Supabase
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Backend API
+VITE_API_URL=your_railway_backend_url
+
+# Backend (Railway)
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+GEMINI_API_KEY=your_gemini_api_key
+YTDLP_COOKIES=your_instagram_cookies
+```
+
+### Local Development
+
+**Frontend:**
+```bash
+npm install
+npm run dev
+```
+
+**Backend:**
+```bash
+pip install -r requirements.backend.txt
+python main.py
+```
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend
+- **Framework:** React + TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS
+- **UI Components:** Radix UI
+- **Auth:** Supabase
+- **Hosting:** Vercel
+- **Charts:** Recharts
+- **Animations:** Framer Motion
+
+### Backend
+- **Framework:** FastAPI
+- **Audio Recognition:** Shazamio (Shazam API)
+- **Music API:** Spotify Web API (spotipy)
+- **Video Downloader:** yt-dlp
+- **AI:** Google Gemini (for genre detection)
+- **Hosting:** Railway
+
+---
+
+## 📦 Deployment
+
+### Frontend (Vercel)
+
+1. Connect your GitHub repo to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy!
+
+### Backend (Railway)
+
+1. Connect your GitHub repo to Railway
+2. Set environment variables (including Instagram cookies)
+3. Railway auto-deploys from `main` branch
+
+### Supabase Setup
+
+1. Create a new Supabase project
+2. Enable Spotify OAuth provider
+3. Add redirect URLs:
+   - `https://yourdomain.vercel.app/**`
+   - `https://your-supabase-url.supabase.co/auth/v1/callback`
+4. Create `history` table (auto-created via Supabase migrations)
+
+### Spotify Developer Setup
+
+1. Create a new app at https://developer.spotify.com/dashboard
+2. Add Redirect URIs:
+   - `https://yourdomain.vercel.app`
+   - `https://your-supabase-url.supabase.co/auth/v1/callback`
+3. Copy Client ID and Secret to environment variables
+
+---
+
+## 🎮 Usage
+
+### Desktop
+
+1. Visit https://stashyourmusic.vercel.app
+2. Login with Spotify
+3. Paste an Instagram Reel, TikTok, or YouTube link
+4. Click "Stash" - song is instantly saved to your library!
+
+### Mobile (PWA)
+
+1. Visit site on mobile browser
+2. "Add to Home Screen"
+3. Share reels directly from Instagram → "Stash" app
+4. Song recognizes and saves automatically!
+
+---
+
+## 🔐 Instagram Cookie Setup
+
+For Instagram Reels to work, you need to provide cookies:
+
+1. Install "Get cookies.txt LOCALLY" browser extension
+2. Visit instagram.com while logged in
+3. Export cookies
+4. Add to Railway as `YTDLP_COOKIES` environment variable
+
+**For scaling:** Add multiple cookie sets as `YTDLP_COOKIES_1`, `YTDLP_COOKIES_2`, etc.
+
+See [`INSTAGRAM_COOKIES_GUIDE.md`](./INSTAGRAM_COOKIES_GUIDE.md) for detailed instructions.
+
+---
+
+## 📊 Features in Detail
+
+### Smart Stash
+Automatically organizes songs by genre into themed playlists like "Stash: Techno", "Stash: Pop", etc.
+
+### Rate Limiting
+- Free tier: 10 songs/day per IP
+- Protects against abuse
+- Ready for premium tier implementation
+
+### Stats & Analytics
+- Songs stashed this week
+- Current listening streak
+- Top genres and artists
+- Beautiful mood board visualizations
+
+---
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+stash/
+├── src/
+│   ├── components/     # React components
+│   ├── lib/           # API & utilities
+│   └── ...
+├── api/               # Backend (Railway)
+├── public/            # Static assets
+└── main.py           # Backend entry point
+```
+
+### Key Files
+
+- `src/App.tsx` - Main app logic
+- `src/lib/api.ts` - Frontend API client
+- `api/index.py` - Backend FastAPI routes
+- `main.py` - Backend server
+
+---
+
+## 🐛 Troubleshooting
+
+### Auth not working
+- Verify Supabase redirect URLs include `/**` wildcard
+- Check Spotify Developer Dashboard redirect URIs
+- Clear browser cache and try incognito mode
+
+### Instagram downloads failing
+- Check if cookies are expired (refresh every ~90 days)
+- Verify `YTDLP_COOKIES` is set in Railway
+- Public posts should work without cookies
+
+### Backend errors
+- Check Railway logs for specific errors
+- Verify all environment variables are set
+- Ensure ffmpeg is installed (auto-installed in Docker)
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Shazam](https://www.shazam.com/) for audio fingerprinting
+- [Spotify](https://spotify.com) for their amazing API
+- [Supabase](https://supabase.com) for auth infrastructure
+- [Vercel](https://vercel.com) & [Railway](https://railway.app) for hosting
+
+---
+
+## 🔗 Links
+
+- **Live Demo:** https://stashyourmusic.vercel.app
+- **Backend API:** https://stash-production-ed8d.up.railway.app
+- **Report Issues:** [GitHub Issues](https://github.com/yourusername/stash/issues)
+
+---
+
+Made with ❤️ for music lovers everywhere
