@@ -187,7 +187,7 @@ export function AppView({
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-4xl">
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-4xl pt-safe">
         {/* Quick Stats */}
         <QuickStats
           totalSongs={history.length}

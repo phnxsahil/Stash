@@ -212,14 +212,16 @@ export const api = {
     let savedSong: Song | null = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Authentication required to save history");
+
       const payload = {
-        // user_id: user?.id, // Commenting out potential problematic column
+        user_id: user.id,
         song: song.song,
         artist: song.artist,
         source: source || 'Web',
         album_art_url: song.album_art_url,
         preview_url: song.preview_url || null,
-        // spotify_url: song.spotify_url || `https://open.spotify.com/track/${song.id}`,
+        spotify_url: song.spotify_url || `https://open.spotify.com/track/${song.id}`,
         genre: genre, // Add genre to Supabase payload
       };
 

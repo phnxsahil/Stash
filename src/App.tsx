@@ -132,7 +132,7 @@ export default function App() {
     try {
       const playlists = await api.getUserPlaylists();
       setState((prev) => ({ ...prev, playlists }));
-      loadHistory();
+      await loadHistory();
     } catch (err) {
       console.warn("Auth: Failed to fetch enriched user data:", err);
     }
@@ -363,7 +363,21 @@ export default function App() {
       case 'help':
         return <HelpView onBack={handleBack} theme={state.theme} />;
       case 'stats':
-        return <StatsPageView onBack={handleBack} theme={state.theme} history={state.history} />;
+        return (
+          <StatsPageView
+            onBack={handleBack}
+            theme={state.theme}
+            history={state.history}
+            userName={state.userName}
+            songsThisWeek={state.history.filter(s => {
+              const date = new Date(s.created_at || '');
+              const now = new Date();
+              const diff = now.getTime() - date.getTime();
+              return diff < 7 * 24 * 60 * 60 * 1000;
+            }).length}
+            streak={0} // Placeholder for now
+          />
+        );
       case 'settings':
         return (
           <SettingsView
@@ -378,6 +392,7 @@ export default function App() {
             onToggleAutoAdd={handleToggleAutoAdd}
             onPlaylistChange={handlePlaylistChange}
             onToggleTheme={handleToggleTheme}
+            onOpenStats={() => handleNavigate('stats')}
           />
         );
       case 'app':
@@ -385,6 +400,13 @@ export default function App() {
           <AppView
             userName={state.userName}
             history={state.history}
+            songsThisWeek={state.history.filter(s => {
+              const date = new Date(s.created_at || '');
+              const now = new Date();
+              const diff = now.getTime() - date.getTime();
+              return diff < 7 * 24 * 60 * 60 * 1000;
+            }).length}
+            streak={0} // Placeholder for now
             autoAddTopMatch={state.autoAddTopMatch}
             theme={state.theme}
             onLogout={handleLogout}
