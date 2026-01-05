@@ -1,4 +1,4 @@
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut, Shield, Info, HelpCircle, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
@@ -123,23 +123,62 @@ export function SettingsView({
                         </div>
                     </div>
 
+                    {/* Navigation Section */}
+                    <div className="glass-card rounded-2xl p-6 space-y-2">
+                        <h2 className="text-lg font-semibold mb-2">Support</h2>
+                        <button
+                            onClick={() => (window as any).onNavigate?.('about')}
+                            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <Info className="w-5 h-5 text-blue-500" />
+                                <span>About Stash</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </button>
+                        <button
+                            onClick={() => (window as any).onNavigate?.('help')}
+                            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <HelpCircle className="w-5 h-5 text-orange-500" />
+                                <span>Help & Feedback</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </button>
+                        <button
+                            onClick={() => (window as any).onNavigate?.('privacy')}
+                            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <Shield className="w-5 h-5 text-emerald-500" />
+                                <span>Privacy Policy</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </button>
+                    </div>
+
                     {/* Actions */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <Button
                             onClick={onOpenStats}
                             variant="outline"
-                            className="w-full"
+                            className="w-full h-14 rounded-2xl border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 font-semibold"
                         >
                             View Stats
                         </Button>
                         <Button
                             onClick={onLogout}
                             variant="destructive"
-                            className="w-full"
+                            className="w-full h-14 rounded-2xl font-semibold"
                         >
                             <LogOut className="w-4 h-4 mr-2" />
                             Logout
                         </Button>
+                    </div>
+
+                    <div className="text-center py-8">
+                        <p className="text-xs text-gray-500 font-mono">STASH v1.0.0 (Public Beta)</p>
                     </div>
                 </div>
             </div>

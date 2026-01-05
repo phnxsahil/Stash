@@ -65,7 +65,7 @@ export function PrivacyView({ onBack, theme }: PrivacyViewProps) {
           <section className="glass-card rounded-2xl p-8 shadow-lg">
             <h2 className="mb-4" style={{ fontWeight: 600 }}>Third-Party Services</h2>
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Stash integrates with Spotify. Your use of Spotify is governed by Spotify's privacy policy. We do not share your personal information with third parties except as necessary to provide our service.
+              Stash integrates with Spotify. Stash uses the Spotify API but is not affiliated with or endorsed by Spotify. Your use of Spotify is governed by Spotify's own privacy policy and terms of service.
             </p>
           </section>
 
@@ -87,7 +87,7 @@ export function PrivacyView({ onBack, theme }: PrivacyViewProps) {
           </section>
 
           <div className="text-center text-sm text-gray-500 dark:text-gray-500">
-            Last updated: December 15, 2025
+            Last updated: January 2026
           </div>
         </div>
       </div>

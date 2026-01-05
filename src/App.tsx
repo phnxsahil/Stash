@@ -338,6 +338,12 @@ export default function App() {
     setState((prev) => ({ ...prev, currentView: view }));
   };
 
+  // Expose for settings navigation
+  useEffect(() => {
+    (window as any).onNavigate = handleNavigate;
+    return () => { delete (window as any).onNavigate; };
+  }, []);
+
   const handleBack = () => {
     if (state.isLoggedIn) {
       setState((prev) => ({ ...prev, currentView: 'app' }));

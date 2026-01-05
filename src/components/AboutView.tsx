@@ -118,10 +118,10 @@ export function AboutView({ onBack, theme }: AboutViewProps) {
           </section>
 
           {/* About the Developer */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-white/10">
+          <section className="glass-card rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-white/10 text-center md:text-left">
             <h2 className="text-2xl mb-4" style={{ fontWeight: 600 }}>About the Developer</h2>
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg">
-              Stash was designed and developed by Sahil Sharma with a passion for music discovery and clean, intuitive design. The goal was to create a seamless bridge between the vast world of internet music and your personal Spotify library.
+              Stash was designed and developed by <strong>Sahil Sharma</strong> with a passion for music discovery and clean, intuitive design. Driven by the belief that music discovery should be frictionless, Sahil built Stash to be the definitive bridge between social media curation and your personal Spotify library.
             </p>
           </section>
 

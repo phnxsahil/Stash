@@ -218,7 +218,7 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center justify-center gap-4">
             <p className="text-gray-500 dark:text-gray-500 text-sm text-center">
-              © 2025 Stash. The internet's save button for music.
+              © 2026 Stash. The internet's save button for music.
             </p>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
               Designed & Developed by Sahil Sharma
