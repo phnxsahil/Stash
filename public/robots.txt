@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stashyourmusic.vercel.app/sitemap.xml
