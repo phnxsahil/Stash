@@ -1,5 +1,5 @@
 import { Song } from '../types';
-import { Trash2, Share2, Search, Calendar } from 'lucide-react';
+import { Trash2, Share2, Search, Calendar, Music } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import LoadingSkeleton from './LoadingSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';

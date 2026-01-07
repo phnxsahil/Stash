@@ -233,7 +233,7 @@ export const api = {
         genre: genre, // Add genre to Supabase payload
       };
 
-      console.log("API: Inserting into Supabase:", payload);
+      console.log("🔄 Supabase: Attempting to save track history...", { song: song.song, user_id: user.id });
 
       const { data, error } = await supabase
         .from('history')
@@ -242,9 +242,11 @@ export const api = {
         .single();
 
       if (error) {
-        if (error.code === '42703' && error.message.includes('user_id')) {
-          console.warn("⚠️ Supabase: 'user_id' column missing. Retrying without it...");
-          // Fallback: Try inserting without user_id if column missing (Internal use only)
+        // Broaden the check: if it's a 400 or specifically 42703 mentioning user_id, try fallback
+        const isColumnError = error.code === '42703' || (error.code === '400' && error.message?.includes('user_id'));
+
+        if (isColumnError) {
+          console.warn("⚠️ Supabase: 'user_id' column issue detected. Retrying WITHOUT user_id filter...");
           const { user_id, ...payloadWithoutUser } = payload;
           const { data: retryData, error: retryError } = await supabase
             .from('history')
@@ -252,16 +254,22 @@ export const api = {
             .select()
             .single();
 
-          if (retryError) throw retryError;
+          if (retryError) {
+            console.error("❌ Supabase: Fallback save failed:", retryError);
+            throw retryError;
+          }
+          console.log("✅ Supabase: Save successful via fallback.");
           savedSong = retryData as Song;
         } else {
+          console.error("❌ Supabase: Insert error:", error);
           throw error;
         }
       } else {
+        console.log("✅ Supabase: Save successful.");
         savedSong = data as Song;
       }
     } catch (dbError) {
-      console.warn("⚠️ Supabase Insert Failed (Ignored):", dbError);
+      console.warn("⚠️ Supabase DB operation failed:", dbError);
     }
 
     // Construct a temporary song object only if DB succeeded
@@ -280,25 +288,40 @@ export const api = {
       return [];
     }
 
-    let query = supabase
+    console.log("🔄 Supabase: Fetching user history...", { user_id: user.id });
+
+    // Try primary query with user_id filter
+    const { data, error } = await supabase
       .from('history')
-      .select('*');
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    if (user.id) {
-      // We try to filter by user_id but handle the case where the column doesn't exist
-      const { data, error } = await query.eq('user_id', user.id).order('created_at', { ascending: false });
+    if (error) {
+      // Robust check for missing column or generic 400 mentioning user_id
+      const isColumnError = error.code === '42703' || (error.code === '400' && error.message?.includes('user_id'));
 
-      if (error) {
-        if (error.code === '42703' && error.message.includes('user_id')) {
-          console.warn("⚠️ Supabase: 'user_id' column missing in history table. Fetching all items as fallback.");
-          const { data: fallbackData, error: fallbackError } = await query.order('created_at', { ascending: false });
-          if (fallbackError) throw fallbackError;
-          return fallbackData || [];
+      if (isColumnError) {
+        console.warn("⚠️ Supabase: 'user_id' column missing. Fetching ALL history items as global fallback.");
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('history')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fallbackError) {
+          console.error("❌ Supabase: Final fallback fetch error:", fallbackError);
+          throw fallbackError;
         }
-        throw error;
+        console.log(`✅ Supabase: Loaded ${fallbackData?.length || 0} items via global fallback.`);
+        return fallbackData || [];
       }
-      return data || [];
+
+      console.error("❌ Supabase: Primary fetch error:", error);
+      throw error;
     }
+
+    console.log(`✅ Supabase: Loaded ${data?.length || 0} items for user.`);
+    return data || [];
 
     return [];
   },
