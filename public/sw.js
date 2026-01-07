@@ -41,11 +41,16 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests for caching
+  if (event.request.method !== 'GET') {
+    return; // Let the browser handle POST/PUT/etc. normally
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // ONLY cache successful GET requests
-        if (event.request.method === 'GET' && response.ok) {
+        // Cache successful responses
+        if (response.ok) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
