@@ -242,44 +242,37 @@ export const api = {
         .single();
 
       if (error) {
-        // Handle BOTH user_id and genre column issues (42703 = missing column, PGRST204 = schema cache mismatch)
-        const isColumnError = error.code === '42703' || error.code === 'PGRST204' || (error.code === '400' && (error.message?.includes('user_id') || error.message?.includes('genre')));
+        // Zero-Failure Strategy: If the first attempt fails for ANY reason, try a minimalist payload
+        console.warn(`⚠️ Supabase: Save failed (${error.code}). Retrying with minimalist payload...`);
+        console.log("DEBUG: Original error was:", error);
 
-        if (isColumnError) {
-          console.warn(`⚠️ Supabase: Schema mismatch (${error.code}). Retrying with minimalist payload...`);
+        const minimalistPayload = {
+          song: payload.song,
+          artist: payload.artist,
+          source: payload.source,
+          album_art_url: payload.album_art_url,
+          preview_url: payload.preview_url,
+          spotify_url: payload.spotify_url
+        };
 
-          // Minimalist fallback: Only core columns that are almost certainly there
-          const minimalistPayload = {
-            song: payload.song,
-            artist: payload.artist,
-            source: payload.source,
-            album_art_url: payload.album_art_url,
-            preview_url: payload.preview_url,
-            spotify_url: payload.spotify_url
-          };
+        const { data: retryData, error: retryError } = await supabase
+          .from('history')
+          .insert(minimalistPayload)
+          .select()
+          .single();
 
-          const { data: retryData, error: retryError } = await supabase
-            .from('history')
-            .insert(minimalistPayload)
-            .select()
-            .single();
-
-          if (retryError) {
-            console.error("❌ Supabase: Even minimalist save failed:", retryError);
-            throw retryError;
-          }
-          console.log("✅ Supabase: Save successful via minimalist fallback.");
-          savedSong = retryData as Song;
-        } else {
-          console.error("❌ Supabase: Insert error:", error);
-          throw error;
+        if (retryError) {
+          console.error("❌ Supabase: Even minimalist save failed:", retryError);
+          throw retryError;
         }
+        console.log("✅ Supabase: Save successful via minimalist fallback.");
+        savedSong = retryData as Song;
       } else {
         console.log("✅ Supabase: Save successful.");
         savedSong = data as Song;
       }
     } catch (dbError) {
-      console.warn("⚠️ Supabase DB operation failed:", dbError);
+      console.warn("⚠️ Supabase DB operation failed (Safe fallback):", dbError);
     }
 
     // Construct a temporary song object only if DB succeeded
@@ -292,48 +285,46 @@ export const api = {
   },
 
   async getUserHistory(): Promise<Song[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn("⚠️ History: No authenticated user found, returning empty history.");
-      return [];
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.warn("⚠️ History: No authenticated user found, returning empty history.");
+        return [];
+      }
 
-    console.log("🔄 Supabase: Fetching user history...", { user_id: user.id });
+      console.log("🔄 Supabase: Fetching user history...", { user_id: user.id });
 
-    // Try primary query with user_id filter
-    const { data, error } = await supabase
-      .from('history')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      // Try primary query with user_id filter
+      const { data, error } = await supabase
+        .from('history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      // Robust check for missing column or generic 400 mentioning user_id
-      const isColumnError = error.code === '42703' || (error.code === '400' && error.message?.includes('user_id'));
+      if (error) {
+        // Zero-Failure Strategy: Fallback to global fetch on ANY error
+        console.warn(`⚠️ Supabase: Fetching by user_id failed (${error.code}). Attempting global fetch fallback...`);
+        console.log("DEBUG: Original error was:", error);
 
-      if (isColumnError) {
-        console.warn("⚠️ Supabase: 'user_id' column missing. Fetching ALL history items as global fallback.");
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('history')
           .select('*')
           .order('created_at', { ascending: false });
 
         if (fallbackError) {
-          console.error("❌ Supabase: Final fallback fetch error:", fallbackError);
+          console.error("❌ Supabase: Global fallback fetch failed:", fallbackError);
           throw fallbackError;
         }
         console.log(`✅ Supabase: Loaded ${fallbackData?.length || 0} items via global fallback.`);
         return fallbackData || [];
       }
 
-      console.error("❌ Supabase: Primary fetch error:", error);
-      throw error;
+      console.log(`✅ Supabase: Loaded ${data?.length || 0} items for user.`);
+      return data || [];
+    } catch (err) {
+      console.error("❌ API: getUserHistory critical failure:", err);
+      return [];
     }
-
-    console.log(`✅ Supabase: Loaded ${data?.length || 0} items for user.`);
-    return data || [];
-
-    return [];
   },
 
   async deleteSong(id: string): Promise<void> {
