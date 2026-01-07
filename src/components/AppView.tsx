@@ -78,7 +78,7 @@ export function AppView({
               <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#1DB954] to-[#1ed760] flex items-center justify-center shadow-lg shadow-[#1DB954]/20">
                 <Radio className="w-5 h-5 md:w-6 md:h-6 text-black" />
               </div>
-              <span className="text-xl md:text-2xl text-[#1DB954] hidden sm:inline" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Stash</span>
+              <span className="text-xl md:text-2xl text-[#1DB954]" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Stash</span>
             </div>
 
             {/* Desktop Navigation */}
