@@ -223,7 +223,7 @@ export function AppView({
                 <Button
                   type="submit"
                   disabled={isLoading || !url.trim()}
-                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black px-8 md:px-12 h-12 md:h-14 rounded-xl shadow-lg shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 transition-all"
+                  className="bg-[#1DB954] hover:bg-[#1ed760] text-white px-8 md:px-12 h-12 md:h-14 rounded-xl shadow-lg shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 transition-all"
                   style={{ fontWeight: 600 }}
                 >
                   {isLoading ? (
