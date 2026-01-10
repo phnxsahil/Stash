@@ -202,7 +202,7 @@ export function SettingsView({
                     </div>
 
                     <div className="text-center py-8">
-                        <p className="text-xs text-gray-500 font-mono">STASH v1.0.0 (Public Beta)</p>
+                        <p className="text-xs text-gray-500 font-mono">STASH v1.1.0 (Production)</p>
                     </div>
                 </div>
             </div>

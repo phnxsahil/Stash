@@ -10,10 +10,12 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { api, Song, SongMatch, Playlist } from './lib/api';
 import { supabase } from './lib/supabase';
+import { logger } from './lib/logger';
 
 type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
 
@@ -99,9 +101,9 @@ export default function App() {
   // Handle Auth Session
   useEffect(() => {
     const checkSession = async () => {
-      console.log('🔐 Checking auth session...');
+      logger.log('🔐 Checking auth session...');
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔐 Session:', session ? 'Found' : 'Not found');
+      logger.log('🔐 Session:', session ? 'Found' : 'Not found');
       if (session) {
         handleAuthSuccess(session.user);
       }
@@ -110,7 +112,7 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔐 Auth state changed:', event, session ? 'Session present' : 'No session');
+        logger.log('🔐 Auth state changed:', event, session ? 'Session present' : 'No session');
         if (session) {
           handleAuthSuccess(session.user);
         }
@@ -121,7 +123,7 @@ export default function App() {
   }, []);
 
   const handleAuthSuccess = async (user: any) => {
-    console.log('✅ Auth success! User:', user.email);
+    logger.log('✅ Auth success! User:', user.email);
     const token = await api.getSpotifyToken();
 
     setState((prev) => ({
@@ -132,11 +134,11 @@ export default function App() {
       userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
       currentView: 'app',
     }));
-    console.log('✅ Redirecting to dashboard...');
+    logger.log('✅ Redirecting to dashboard...');
 
     try {
       // Parallelize for speed and decoupling
-      console.log('🔄 Fetching user data ecosystem...');
+      logger.log('🔄 Fetching user data ecosystem...');
       const results = await Promise.allSettled([
         api.getUserPlaylists(),
         loadHistory()
@@ -146,10 +148,10 @@ export default function App() {
       if (playlistsRes.status === 'fulfilled') {
         setState((prev) => ({ ...prev, playlists: playlistsRes.value }));
       } else {
-        console.warn("Auth: Playlists failed to load (Token might be expired):", playlistsRes.reason);
+        logger.warn("Auth: Playlists failed to load (Token might be expired):", playlistsRes.reason);
       }
     } catch (err) {
-      console.error("Auth: Critical Failure in data ecosystem:", err);
+      logger.error("Auth: Critical Failure in data ecosystem:", err);
     }
   };
 
@@ -179,7 +181,7 @@ export default function App() {
       const history = await api.getUserHistory();
       setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
     } catch (error) {
-      console.error('Failed to load history:', error);
+      logger.error('Failed to load history:', error);
       setState((prev) => ({ ...prev, isLoadingHistory: false }));
       toast.error('Failed to load history');
     }
@@ -189,7 +191,7 @@ export default function App() {
     try {
       await api.connectSpotify();
     } catch (error) {
-      console.error('Failed to connect:', error);
+      logger.error('Failed to connect:', error);
       toast.error('Failed to connect to Spotify');
     }
   };
@@ -218,7 +220,7 @@ export default function App() {
       });
       toast.success('Logged out successfully');
     } catch (error) {
-      console.error('Failed to logout:', error);
+      logger.error('Failed to logout:', error);
       toast.error('Failed to logout');
     }
   };
@@ -260,7 +262,7 @@ export default function App() {
       }, 1000);
 
     } catch (error) {
-      console.error('Failed to stash:', error);
+      logger.error('Failed to stash:', error);
       setState((prev) => ({
         ...prev,
         processingStage: 'error',
@@ -296,7 +298,7 @@ export default function App() {
 
       toast.success(`"${song.song}" added to your library!`);
     } catch (error) {
-      console.error('Failed to add track:', error);
+      logger.error('Failed to add track:', error);
       toast.error('Failed to add song to library');
     }
   };
@@ -310,7 +312,7 @@ export default function App() {
       }));
       toast.success('Song removed from history');
     } catch (error) {
-      console.error('Failed to delete song:', error);
+      logger.error('Failed to delete song:', error);
       toast.error('Failed to delete song');
     }
   };
@@ -321,7 +323,7 @@ export default function App() {
       setState((prev) => ({ ...prev, autoAddTopMatch: value }));
       toast.success(value ? 'Auto-add enabled' : 'Auto-add disabled');
     } catch (error) {
-      console.error('Failed to update preferences:', error);
+      logger.error('Failed to update preferences:', error);
       toast.error('Failed to update preferences');
     }
   };
@@ -333,7 +335,7 @@ export default function App() {
       }
       setState((prev) => ({ ...prev, theme: value }));
     } catch (error) {
-      console.error('Failed to update theme:', error);
+      logger.error('Failed to update theme:', error);
       toast.error('Failed to update theme');
     }
   };
@@ -345,7 +347,7 @@ export default function App() {
       const playlist = state.playlists.find(p => p.id === playlistId);
       toast.success(`Default playlist set to ${playlist?.name || 'selected playlist'}`);
     } catch (error) {
-      console.error('Failed to update playlist:', error);
+      logger.error('Failed to update playlist:', error);
       toast.error('Failed to update playlist');
     }
   };
@@ -456,31 +458,33 @@ export default function App() {
   };
 
   return (
-    <div className="size-full">
-      {renderView()}
+    <ErrorBoundary>
+      <div className="size-full">
+        {renderView()}
 
-      <ConfirmationModal
-        isOpen={state.showModal}
-        matches={state.currentMatches}
-        onClose={() => setState((prev) => ({ ...prev, showModal: false }))}
-        onSelectSong={handleSongSelection}
-      />
+        <ConfirmationModal
+          isOpen={state.showModal}
+          matches={state.currentMatches}
+          onClose={() => setState((prev) => ({ ...prev, showModal: false }))}
+          onSelectSong={handleSongSelection}
+        />
 
-      <ProcessingOverlay
-        isVisible={state.isProcessing}
-        stage={state.processingStage}
-        errorMessage={state.processingError}
-        onClose={() => setState((prev) => ({
-          ...prev,
-          isProcessing: false,
-          processingStage: 1,
-          processingError: undefined
-        }))}
-      />
-      <PWAInstallPrompt />
-      <PWARegistration />
+        <ProcessingOverlay
+          isVisible={state.isProcessing}
+          stage={state.processingStage}
+          errorMessage={state.processingError}
+          onClose={() => setState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            processingStage: 1,
+            processingError: undefined
+          }))}
+        />
+        <PWAInstallPrompt />
+        <PWARegistration />
 
-      <Toaster position="bottom-right" theme={state.theme} />
-    </div>
+        <Toaster position="bottom-right" theme={state.theme} />
+      </div>
+    </ErrorBoundary>
   );
 }

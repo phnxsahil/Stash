@@ -1,40 +1,31 @@
 import os
 import time
-# Trigger reload
 import json
 import glob
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from dotenv import load_dotenv
 import requests
-# removed google-generativeai
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import yt_dlp
 import shutil
-# from static_ffmpeg import add_paths
-# add_paths()
 
-# 1. Load Keys
-load_dotenv()
+# Import centralized configuration
+from api.config import settings
 
-
-# 2. Configure AI (Using REST API instead of heavy SDK to save space)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# 3. Configure Spotify
+# Configure Spotify with validated credentials
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-    client_id=os.getenv("SPOTIFY_CLIENT_ID"),
-    client_secret=os.getenv("SPOTIFY_CLIENT_SECRET")
+    client_id=settings.SPOTIFY_CLIENT_ID,
+    client_secret=settings.SPOTIFY_CLIENT_SECRET
 ))
 
-app = FastAPI(title="Stash Engine API")
+app = FastAPI(title="Stash Engine API v1.1.0")
 
-# Configure CORS
+# Configure CORS with environment-based origins (SECURE)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this for production
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,15 +60,16 @@ async def recognize_reel(req: ReelRequest, request: Request):
     now = time.time()
     request_log[client_ip] = [t for t in request_log[client_ip] if now - t < 86400]  # Keep last 24h
     
-    if len(request_log[client_ip]) >= 10:
+    if len(request_log[client_ip]) >= settings.RATE_LIMIT_PER_DAY:
         raise HTTPException(
             status_code=429, 
-            detail="Daily limit reached (10 reels/day). Upgrade to Pro for unlimited access!"
+            detail=f"Daily limit reached ({settings.RATE_LIMIT_PER_DAY} reels/day). Upgrade to Pro for unlimited access!"
         )
     
     request_log[client_ip].append(now)
     
-    print(f"🚀 Processing: {req.url} (IP: {client_ip}, Count: {len(request_log[client_ip])})")
+    if settings.ENABLE_DEBUG_LOGS:
+        print(f"🚀 Processing: {req.url} (IP: {client_ip}, Count: {len(request_log[client_ip])})")
 
     # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(req.url)
@@ -87,7 +79,8 @@ async def recognize_reel(req: ReelRequest, request: Request):
 
     try:
         # 2. ASK SHAZAM (Audio Fingerprinting)
-        print(f"🎵 Fingerprinting with Shazam: {audio_filename}")
+        if settings.ENABLE_DEBUG_LOGS:
+            print(f"🎵 Fingerprinting with Shazam: {audio_filename}")
         shazam = Shazam()
         
         # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
@@ -98,14 +91,16 @@ async def recognize_reel(req: ReelRequest, request: Request):
 
         # 3. PARSE SHAZAM RESULT
         if not out.get('matches'):
-            print("❌ Shazam found no matches.")
-            return {"success": False, "error": "Shazam could not identify song"}
+            if settings.ENABLE_DEBUG_LOGS:
+                print("❌ Shazam found no matches.")
+            return {"success": False, "error": "Could not identify song from audio"}
 
         track_info = out['track']
         shazam_title = track_info['title']
         shazam_artist = track_info['subtitle']
         
-        print(f"🎯 Shazam Match: {shazam_title} by {shazam_artist}")
+        if settings.ENABLE_DEBUG_LOGS:
+            print(f"🎯 Shazam Match: {shazam_title} by {shazam_artist}")
 
         # 4. VERIFY WITH SPOTIFY (Get Playable URI)
         # We still search Spotify to get the URI for the frontend player/saving
@@ -166,11 +161,13 @@ def _download_with_options(url, use_cookies=False):
                     with open(cookie_file, 'w') as f:
                         f.write(cookies_content)
                     ydl_opts['cookiefile'] = cookie_file
-                    print(f"🍪 Using cookies for authentication (Pool: {len(available_cookies)} accounts)")
+                    if settings.ENABLE_DEBUG_LOGS:
+                        print(f"🍪 Using cookies for authentication (Pool: {len(available_cookies)} accounts)")
                 except Exception as e:
                     print(f"⚠️ Cookie file creation failed: {e}")
         else:
-            print("🌐 Trying cookieless download (public post)...")
+            if settings.ENABLE_DEBUG_LOGS:
+                print("🌐 Trying cookieless download (public post)...")
 
         if has_ffmpeg:
             ydl_opts.update({
@@ -222,7 +219,8 @@ def search_spotify_strict(track, artist):
     candidates.sort(key=lambda x: x['popularity'], reverse=True)
     best = candidates[0]
     
-    print(f"🎯 Spotify Match (Popularity {best['popularity']}): {best['name']} by {best['artists'][0]['name']}")
+    if settings.ENABLE_DEBUG_LOGS:
+        print(f"🎯 Spotify Match (Popularity {best['popularity']}): {best['name']} by {best['artists'][0]['name']}")
 
     return {
         "success": True,
@@ -242,8 +240,9 @@ class SaveWebTrackRequest(BaseModel):
 
 # Helper: AI Genre Detection
 def detect_genre_with_gemini(track_name, artist_name):
+    """Detect music genre using Gemini AI"""
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         prompt = f"What is the primary music genre of the song '{track_name}' by '{artist_name}'? Return only ONE word (e.g., Techno, House, Pop, Rock, Ambient). Do not write sentences."
         
         payload = {
@@ -267,7 +266,9 @@ class AnalyzeVibeRequest(BaseModel):
 
 @app.post("/analyze_vibe")
 def analyze_vibe_summary(request: AnalyzeVibeRequest):
-    print(f"🔮 Analyzing Vibe for {len(request.songs)} songs...")
+    """Analyze user's music vibe using AI"""
+    if settings.ENABLE_DEBUG_LOGS:
+        print(f"🔮 Analyzing Vibe for {len(request.songs)} songs...")
     if not request.songs:
         return {"vibe": "No music yet! Start stashing to find your vibe."}
     
@@ -287,7 +288,8 @@ def analyze_vibe_summary(request: AnalyzeVibeRequest):
         data = res.json()
         
         vibe = data['candidates'][0]['content']['parts'][0]['text'].strip()
-        print(f"✨ Vibe Result: {vibe}")
+        if settings.ENABLE_DEBUG_LOGS:
+            print(f"✨ Vibe Result: {vibe}")
         return {"vibe": vibe}
     except Exception as e:
         print(f"❌ Vibe Error: {e}")
@@ -295,7 +297,9 @@ def analyze_vibe_summary(request: AnalyzeVibeRequest):
 
 @app.post("/save_track")
 def save_track_to_spotify(request: SaveWebTrackRequest):
-    print(f"💾 Saving Track: {request.track_id} to Playlist: {request.playlist_id}")
+    """Save track to Spotify library or playlist"""
+    if settings.ENABLE_DEBUG_LOGS:
+        print(f"💾 Saving Track: {request.track_id} to Playlist: {request.playlist_id}")
     
     try:
         # 1. Initialize User Context

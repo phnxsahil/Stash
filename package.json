@@ -1,6 +1,6 @@
 {
-      "name": "Music App",
-      "version": "0.1.0",
+      "name": "stash",
+      "version": "1.1.0",
       "private": true,
       "dependencies": {
             "@radix-ui/react-accordion": "^1.2.3",
@@ -64,6 +64,9 @@
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build"
+            "build": "vite build",
+            "build:prod": "tsc --noEmit && vite build",
+            "preview": "vite preview",
+            "type-check": "tsc --noEmit"
       }
 }
