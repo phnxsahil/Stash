@@ -21,6 +21,32 @@
 
 ## 🚀 Quick Start
 
+### 🌟 GitHub Codespaces (Recommended for Collaboration)
+
+Get started in seconds with a pre-configured cloud development environment:
+
+1. **Click** the green "Code" button → "Create codespace on main"
+2. **Wait** 3-5 minutes for automatic setup (Node.js, Python, ffmpeg, dependencies)
+3. **Configure** environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API credentials
+   ```
+4. **Run** the app:
+   ```bash
+   # Terminal 1: Frontend
+   npm run dev
+   
+   # Terminal 2: Backend
+   python main.py
+   ```
+
+Your app will be available at the forwarded ports (5173 for frontend, 8000 for backend).
+
+> **💡 Tip**: Configure [Codespaces secrets](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-secrets-for-your-codespaces) for your API keys to avoid manual .env setup.
+
+---
+
 ### Prerequisites
 
 - Node.js 18+ 
