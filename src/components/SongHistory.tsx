@@ -147,21 +147,21 @@ export default function SongHistory({ history, onDelete }: SongHistoryProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
-                                className="flex items-center gap-4 p-4 bg-[#1D1D1F] rounded-lg border border-gray-800 hover:border-gray-700 transition-all group hover:bg-gray-800/30 shadow-sm"
+                                className="flex items-center gap-4 p-4 bg-[#1D1D1F] rounded-lg border border-gray-800 hover:border-gray-700 transition-all hover:bg-gray-800/30 shadow-sm"
                             >
                                 {/* Album Art */}
                                 <div className="relative flex-shrink-0">
                                     <img
                                         src={song.album_art_url}
                                         alt={`${song.song} album art`}
-                                        className="w-16 h-16 rounded-md object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
+                                        className="w-16 h-16 rounded-md object-cover shadow-lg hover:scale-105 transition-transform duration-300"
                                     />
                                     <div className="absolute inset-0 rounded-md ring-1 ring-inset ring-white/10" />
                                 </div>
 
                                 {/* Song Info */}
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold truncate text-[#E5E5E5] group-hover:text-[#1DB954] transition-colors">{song.song}</h3>
+                                    <h3 className="font-bold truncate text-[#E5E5E5] hover:text-[#1DB954] transition-colors">{song.song}</h3>
                                     <p className="text-sm text-gray-400 truncate font-medium">{song.artist}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-800/50 px-2 py-0.5 rounded">

@@ -64,6 +64,9 @@ export default function App() {
     };
   });
 
+  // Force mood board refresh when songs change
+  const [moodBoardKey, setMoodBoardKey] = useState(0);
+
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
   const sharedUrlRef = useRef<string | null>(null);
   const stashSubmitRef = useRef<((url: string) => Promise<void>) | null>(null);
@@ -296,6 +299,9 @@ export default function App() {
         currentUrl: '',
       }));
 
+      // Refresh mood board with new song
+      setMoodBoardKey(prev => prev + 1);
+
       toast.success(`"${song.song}" added to your library!`);
     } catch (error) {
       logger.error('Failed to add track:', error);
@@ -322,6 +328,10 @@ export default function App() {
         ...prev,
         history: prev.history.filter((song) => song.id !== id),
       }));
+
+      // Refresh mood board after deletion
+      setMoodBoardKey(prev => prev + 1);
+
       toast.success('Song removed from Spotify and history');
     } catch (error) {
       logger.error('Failed to delete song:', error);
@@ -401,6 +411,7 @@ export default function App() {
       case 'stats':
         return (
           <StatsPageView
+            key={moodBoardKey}
             onBack={handleBack}
             theme={state.theme}
             history={state.history}

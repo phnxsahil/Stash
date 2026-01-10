@@ -1,10 +1,13 @@
 {
-    "name": "Stash",
+    "name": "Stash - Save Music from Anywhere",
     "short_name": "Stash",
+    "description": "The internet's save button for music",
     "start_url": "/?source=pwa",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#121212",
     "theme_color": "#1DB954",
+    "orientation": "portrait-primary",
     "icons": [
         {
             "src": "/logo-512.png",
@@ -16,7 +19,13 @@
             "src": "/logo-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "maskable any"
+            "purpose": "maskable"
+        },
+        {
+            "src": "/logo-512.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
         }
     ],
     "share_target": {
@@ -28,5 +37,9 @@
             "text": "text",
             "url": "url"
         }
-    }
+    },
+    "categories": [
+        "music",
+        "entertainment"
+    ]
 }
