@@ -35,6 +35,32 @@ class Settings:
     # Environment
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")
     
+    # Instagram Cookies (Multiple Accounts for Rotation)
+    YTDLP_COOKIES: List[str] = []
+    
+    def __init__(self):
+        """Load all YTDLP_COOKIES* environment variables"""
+        # Load YTDLP_COOKIES (primary)
+        primary_cookie = os.getenv("YTDLP_COOKIES", "")
+        if primary_cookie:
+            self.YTDLP_COOKIES.append(primary_cookie)
+        
+        # Load YTDLP_COOKIES_1, YTDLP_COOKIES_2, etc.
+        cookie_num = 1
+        while True:
+            cookie_var = f"YTDLP_COOKIES_{cookie_num}"
+            cookie_value = os.getenv(cookie_var, "")
+            
+            if not cookie_value:
+                break
+                
+            self.YTDLP_COOKIES.append(cookie_value)
+            cookie_num += 1
+        
+        if self.ENABLE_DEBUG_LOGS:
+            print(f"🍪 Loaded {len(self.YTDLP_COOKIES)} Instagram cookie account(s)")
+
+    
     def validate(self) -> None:
         """Validate that all required environment variables are set"""
         required_vars = {

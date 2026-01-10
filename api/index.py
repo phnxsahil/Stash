@@ -142,29 +142,24 @@ def _download_with_options(url, use_cookies=False):
             }
         }
 
-        # Add cookies only if requested
-        if use_cookies:
-            cookie_pool = [
-                os.getenv('YTDLP_COOKIES'),
-                os.getenv('YTDLP_COOKIES_1'),
-                os.getenv('YTDLP_COOKIES_2'),
-                os.getenv('YTDLP_COOKIES_3'),
-            ]
+        # Add cookies with rotation support
+        if use_cookies and settings.YTDLP_COOKIES:
+            import random
             
-            available_cookies = [c for c in cookie_pool if c]
+            # Randomly select from available cookies for load distribution
+            cookies_content = random.choice(settings.YTDLP_COOKIES)
+            cookie_file = '/tmp/cookies.txt'
             
-            if available_cookies:
-                import random
-                cookies_content = random.choice(available_cookies)
-                cookie_file = '/tmp/cookies.txt'
-                try:
-                    with open(cookie_file, 'w') as f:
-                        f.write(cookies_content)
-                    ydl_opts['cookiefile'] = cookie_file
-                    if settings.ENABLE_DEBUG_LOGS:
-                        print(f"🍪 Using cookies for authentication (Pool: {len(available_cookies)} accounts)")
-                except Exception as e:
-                    print(f"⚠️ Cookie file creation failed: {e}")
+            try:
+                with open(cookie_file, 'w') as f:
+                    f.write(cookies_content)
+                ydl_opts['cookiefile'] = cookie_file
+                
+                if settings.ENABLE_DEBUG_LOGS:
+                    cookie_index = settings.YTDLP_COOKIES.index(cookies_content) + 1
+                    print(f"🍪 Using cookie account #{cookie_index} (Pool: {len(settings.YTDLP_COOKIES)} accounts)")
+            except Exception as e:
+                print(f"⚠️ Cookie file creation failed: {e}")
         else:
             if settings.ENABLE_DEBUG_LOGS:
                 print("🌐 Trying cookieless download (public post)...")
