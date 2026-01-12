@@ -2,7 +2,7 @@
 
 **Instantly save songs from Instagram Reels, TikTok, and YouTube directly to your Spotify library.**
 
-*Made with ❤️ by [User](https://github.com/Stashyourmusic) to bridge the gap between social discovery and your music library.*
+*Made with ❤️ by [Sahil Sharma](https://github.com/Stashyourmusic) to bridge the gap between social discovery and your music library.*
 
 ![React](https://img.shields.io/badge/react-%2320232d.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![TypeScript](https://img.shields.io/badge/typescript-%23007acc.svg?style=for-the-badge&logo=typescript&logoColor=white)
