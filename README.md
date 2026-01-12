@@ -14,21 +14,6 @@
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://stashyourmusic.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
----
-
-## 📖 Deep-Dive & Mastery Documentation
-This repository is fully documented for both human learning and AI ingestion (e.g., NotebookLM). 
-
-- 🗺️ **[The Stash Odyssey](./docs/mastery/STASH_ODYSSEY.md)** - The start-to-finish story of how this project was built.
-- 📚 **[The Stash Master Bible](./docs/mastery/STASH_MASTER_BIBLE.md)** - An exhaustive deep-dive into the code, architecture, and logic.
-- 🎓 **[Technical Masterclass](./docs/mastery/TECHNICAL_MASTERCLASS.md)** - Simple explanations for complex engineering concepts used in Stash.
-- 🏁 **[The 1-Hour Gauntlet](./docs/mastery/THE_1_HOUR_GAUNTLET.md)** - A comprehensive interview bank for technical and product roles.
-- 🏎️ **[Mastery Dashboard](./docs/mastery/STASH_MASTERY_DASHBOARD.md)** - Resume-ready bullet points and project index.
-
----
-
----
-
 ## ✨ Features
 
 - 🎯 **Instant Recognition** - Identify songs from Instagram Reels, TikTok, and YouTube links
