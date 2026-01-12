@@ -2,8 +2,30 @@
 
 **Instantly save songs from Instagram Reels, TikTok, and YouTube directly to your Spotify library.**
 
+![React](https://img.shields.io/badge/react-%2320232d.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TypeScript](https://img.shields.io/badge/typescript-%23007acc.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Framer](https://img.shields.io/badge/Framer-0055FF?style=for-the-badge&logo=framer&logoColor=white)
+![AI Optimized](https://img.shields.io/badge/AI--Optimized-NotebookLM-blueviolet?style=for-the-badge&logo=google-gemini&logoColor=white)
+
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://stashyourmusic.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+---
+
+## 📖 Deep-Dive & Mastery Documentation
+This repository is fully documented for both human learning and AI ingestion (e.g., NotebookLM). 
+
+- 🗺️ **[The Stash Odyssey](./docs/mastery/STASH_ODYSSEY.md)** - The start-to-finish story of how this project was built.
+- 📚 **[The Stash Master Bible](./docs/mastery/STASH_MASTER_BIBLE.md)** - An exhaustive deep-dive into the code, architecture, and logic.
+- 🎓 **[Technical Masterclass](./docs/mastery/TECHNICAL_MASTERCLASS.md)** - Simple explanations for complex engineering concepts used in Stash.
+- 🏁 **[The 1-Hour Gauntlet](./docs/mastery/THE_1_HOUR_GAUNTLET.md)** - A comprehensive interview bank for technical and product roles.
+- 🏎️ **[Mastery Dashboard](./docs/mastery/STASH_MASTERY_DASHBOARD.md)** - Resume-ready bullet points and project index.
+
+---
 
 ---
 
@@ -247,6 +269,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
+- **Created by**: [User](https://github.com/Stashyourmusic)
 - [Shazam](https://www.shazam.com/) for audio fingerprinting
 - [Spotify](https://spotify.com) for their amazing API
 - [Supabase](https://supabase.com) for auth infrastructure
@@ -256,9 +279,10 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
+- **New Repository:** https://github.com/Stashyourmusic/Stash
 - **Live Demo:** https://stashyourmusic.vercel.app
 - **Backend API:** https://stash-production-ed8d.up.railway.app
-- **Report Issues:** [GitHub Issues](https://github.com/yourusername/stash/issues)
+- **Report Issues:** [GitHub Issues](https://github.com/Stashyourmusic/Stash/issues)
 
 ---
 
