@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { api, Song, SongMatch, Playlist } from './lib/api';
 import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
+import { calculateStreak } from './lib/analytics';
 
 type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
 
@@ -158,6 +159,8 @@ export default function App() {
     }
   };
 
+const streak = calculateStreak(state.history);
+
   // Load history when user logs in
   useEffect(() => {
     if (state.isLoggedIn && state.history.length === 0) {
@@ -272,15 +275,7 @@ export default function App() {
         processingError: 'Failed to find song. Please try again.'
       }));
 
-      setTimeout(() => {
-        setState((prev) => ({
-          ...prev,
-          isProcessing: false,
-          processingStage: 1,
-          processingError: undefined
-        }));
-      }, 2000);
-
+      // Do NOT auto-close on error to allow retry
       toast.error('Failed to find song. Please try again.');
     }
   };
@@ -422,7 +417,7 @@ export default function App() {
               const diff = now.getTime() - date.getTime();
               return diff < 7 * 24 * 60 * 60 * 1000;
             }).length}
-            streak={0} // Placeholder for now
+            streak={streak}
           />
         );
       case 'settings':
@@ -455,7 +450,7 @@ export default function App() {
               const diff = now.getTime() - date.getTime();
               return diff < 7 * 24 * 60 * 60 * 1000;
             }).length}
-            streak={0} // Placeholder for now
+            streak={streak}
             autoAddTopMatch={state.autoAddTopMatch}
             theme={state.theme}
             onLogout={handleLogout}
@@ -502,6 +497,15 @@ export default function App() {
             processingStage: 1,
             processingError: undefined
           }))}
+          onRetry={() => {
+            setState((prev) => ({
+              ...prev,
+              isProcessing: false,
+              processingStage: 1,
+              processingError: undefined
+            }));
+            handleStashSubmit(state.currentUrl);
+          }}
         />
         <PWAInstallPrompt />
         <PWARegistration />

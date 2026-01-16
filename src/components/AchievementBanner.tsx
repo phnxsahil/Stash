@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Flame, Target, Zap, Star, TrendingUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Trophy, Target, Star, TrendingUp } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface AchievementBannerProps {
   totalSongs: number;
@@ -11,79 +11,93 @@ interface Achievement {
   icon: any;
   title: string;
   description: string;
-  progress: number;
   target: number;
   color: string;
   glow: string;
 }
 
+const ACHIEVEMENT_DEFINITIONS: Achievement[] = [
+  {
+    id: 'first-stash',
+    icon: Star,
+    title: 'First Stash!',
+    description: 'You stashed your first song!',
+    target: 1,
+    color: 'from-yellow-400 to-orange-500',
+    glow: 'shadow-yellow-500/50',
+  },
+  {
+    id: 'collector',
+    icon: Target,
+    title: 'Collector',
+    description: 'Stash 10 songs',
+    target: 10,
+    color: 'from-blue-400 to-cyan-500',
+    glow: 'shadow-blue-500/50',
+  },
+  {
+    id: 'music-lover',
+    icon: Trophy,
+    title: 'Music Lover',
+    description: 'Stash 25 songs',
+    target: 25,
+    color: 'from-purple-400 to-pink-500',
+    glow: 'shadow-purple-500/50',
+  },
+  {
+    id: 'curator',
+    icon: TrendingUp,
+    title: 'Curator',
+    description: 'Stash 50 songs',
+    target: 50,
+    color: 'from-emerald-400 to-green-500',
+    glow: 'shadow-emerald-500/50',
+  },
+];
+
 export function AchievementBanner({ totalSongs }: AchievementBannerProps) {
   const [showBanner, setShowBanner] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
 
-  const achievements: Achievement[] = [
-    {
-      id: 'first-stash',
-      icon: Star,
-      title: 'First Stash!',
-      description: 'You stashed your first song!',
-      progress: totalSongs >= 1 ? 1 : 0,
-      target: 1,
-      color: 'from-yellow-400 to-orange-500',
-      glow: 'shadow-yellow-500/50',
-    },
-    {
-      id: 'collector',
-      icon: Target,
-      title: 'Collector',
-      description: 'Stash 10 songs',
-      progress: Math.min(totalSongs, 10),
-      target: 10,
-      color: 'from-blue-400 to-cyan-500',
-      glow: 'shadow-blue-500/50',
-    },
-    {
-      id: 'music-lover',
-      icon: Trophy,
-      title: 'Music Lover',
-      description: 'Stash 25 songs',
-      progress: Math.min(totalSongs, 25),
-      target: 25,
-      color: 'from-purple-400 to-pink-500',
-      glow: 'shadow-purple-500/50',
-    },
-    {
-      id: 'curator',
-      icon: TrendingUp,
-      title: 'Curator',
-      description: 'Stash 50 songs',
-      progress: Math.min(totalSongs, 50),
-      target: 50,
-      color: 'from-emerald-400 to-green-500',
-      glow: 'shadow-emerald-500/50',
-    },
-  ];
-
-  useEffect(() => {
-    // Check if we just completed an achievement
-    const justCompleted = achievements.find(
-      (ach) => ach.progress === ach.target && !localStorage.getItem(`achievement-${ach.id}-shown`)
-    );
-
-    if (justCompleted) {
-      setCurrentAchievement(justCompleted);
-      setShowBanner(true);
-      localStorage.setItem(`achievement-${justCompleted.id}-shown`, 'true');
-
-      // Auto-hide after 5 seconds
-      setTimeout(() => {
-        setShowBanner(false);
-      }, 5000);
-    }
+  // Compute progress for each achievement based on current totalSongs
+  const achievementsWithProgress = useMemo(() => {
+    return ACHIEVEMENT_DEFINITIONS.map(ach => ({
+      ...ach,
+      progress: Math.min(totalSongs, ach.target),
+      isCompleted: totalSongs >= ach.target
+    }));
   }, [totalSongs]);
 
+  useEffect(() => {
+    const checkAchievements = () => {
+      const justCompleted = achievementsWithProgress.find(
+        (ach) => {
+          const isCompleted = ach.progress === ach.target;
+          const notShown = !localStorage.getItem(`achievement-${ach.id}-shown`);
+          const notCurrentlyShowing = currentAchievement?.id !== ach.id;
+
+          return isCompleted && notShown && notCurrentlyShowing;
+        }
+      );
+
+      if (justCompleted) {
+        // Mark as shown IMMEDIATELY to prevent double-trigger
+        localStorage.setItem(`achievement-${justCompleted.id}-shown`, 'true');
+
+        setCurrentAchievement(justCompleted);
+        setShowBanner(true);
+
+        setTimeout(() => {
+          setShowBanner(false);
+        }, 5000);
+      }
+    };
+
+    checkAchievements();
+  }, [totalSongs, achievementsWithProgress, currentAchievement]);
+
   // Get next achievement to show progress towards
-  const nextAchievement = achievements.find((ach) => ach.progress < ach.target);
+  const nextAchievement = achievementsWithProgress.find((ach) => ach.progress < ach.target);
 
   return (
     <>
