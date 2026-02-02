@@ -35,6 +35,7 @@ class ReelRequest(BaseModel):
     url: str
 
 @app.get("/")
+@app.head("/")
 def health_check():
     return {"status": "Antigravity Engine Online 🟢"}
 
