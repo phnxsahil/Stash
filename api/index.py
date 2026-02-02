@@ -14,11 +14,20 @@ import shutil
 # Import centralized configuration
 from api.config import settings
 
-# Configure Spotify with validated credentials
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-    client_id=settings.SPOTIFY_CLIENT_ID,
-    client_secret=settings.SPOTIFY_CLIENT_SECRET
-))
+# Helper to get Spotify client (Handles missing credentials gracefully)
+def get_spotify_client():
+    if not settings.SPOTIFY_CLIENT_ID or not settings.SPOTIFY_CLIENT_SECRET:
+        return None
+    try:
+        return spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+            client_id=settings.SPOTIFY_CLIENT_ID,
+            client_secret=settings.SPOTIFY_CLIENT_SECRET
+        ))
+    except Exception as e:
+        print(f"❌ Spotify Client Error: {e}")
+        return None
+
+sp = get_spotify_client()
 
 app = FastAPI(title="Stash Engine API v1.1.0")
 
@@ -71,6 +80,16 @@ async def recognize_reel(req: ReelRequest, request: Request):
     
     if settings.ENABLE_DEBUG_LOGS:
         print(f"🚀 Processing: {req.url} (IP: {client_ip}, Count: {len(request_log[client_ip])})")
+
+    # 0. CHECK CONFIGURATION
+    if not settings.SPOTIFY_CLIENT_ID or not settings.SPOTIFY_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=503, 
+            detail="Backend Error: Spotify API credentials are not configured on the server. Please check environment variables."
+        )
+    
+    if not settings.GEMINI_API_KEY:
+        print("⚠️ Gemini API Key missing. Genre detection will be disabled.")
 
     # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(req.url)
@@ -125,9 +144,21 @@ async def recognize_reel(req: ReelRequest, request: Request):
         return search_spotify_strict(shazam_title, shazam_artist)
 
     except Exception as e:
-        print(f"❌ Error: {e}")
-        if audio_filename and os.path.exists(audio_filename): os.remove(audio_filename)
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        print(f"❌ Recognition Error: {error_msg}")
+        
+        # Cleanup audio if it still exists
+        if audio_filename and os.path.exists(audio_filename): 
+            try: os.remove(audio_filename)
+            except: pass
+            
+        # Return a more descriptive error based on the exception
+        if "quota" in error_msg.lower():
+            raise HTTPException(status_code=429, detail="Backend Error: API Quota exceeded for Shazam/Spotify.")
+        elif "authentication" in error_msg.lower() or "credentials" in error_msg.lower():
+            raise HTTPException(status_code=503, detail=f"Backend Error: API Authentication failed. {error_msg}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Backend Error: {error_msg}")
 
 def download_audio(url):
     """Downloads Instagram audio to /tmp. Tries without cookies first (public posts), then with cookies."""
@@ -234,7 +265,16 @@ def _download_with_options(url, use_cookies=False):
 def search_spotify_strict(track, artist):
     # Search with keywords (broader than strict field match, but sorted by popularity)
     query = f"{track} {artist}" 
-    results = sp.search(q=query, type='track', limit=10)  # Get more results to filter
+    
+    current_sp = sp or get_spotify_client()
+    if not current_sp:
+        raise HTTPException(status_code=503, detail="Backend Error: Spotify client is not initialized.")
+        
+    try:
+        results = current_sp.search(q=query, type='track', limit=10)  # Get more results to filter
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Backend Error: Spotify search failed. {str(e)}")
+        
     items = results['tracks']['items']
     
     if not items: return {"success": False, "error": "Not found on Spotify"}

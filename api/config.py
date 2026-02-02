@@ -36,32 +36,52 @@ class Settings:
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")
     
     # Instagram Cookies (Multiple Accounts for Rotation)
-    YTDLP_COOKIES: List[str] = []
+    YTDLP_COOKIES_INSTAGRAM: List[str] = []
+    
+    # YouTube Cookies (Multiple Accounts for Rotation)
+    YTDLP_COOKIES_YOUTUBE: List[str] = []
     
     def __init__(self):
         """Load all YTDLP_COOKIES* environment variables"""
-        # Load YTDLP_COOKIES (primary)
-        primary_cookie = os.getenv("YTDLP_COOKIES", "")
-        if primary_cookie:
-            self.YTDLP_COOKIES.append(primary_cookie)
+        # Load Instagram cookies (supporting both legacy and new names)
+        for var_name in ["YTDLP_COOKIES", "YTDLP_COOKIES_INSTAGRAM"]:
+            val = os.getenv(var_name, "")
+            if val:
+                self.YTDLP_COOKIES_INSTAGRAM.append(val)
         
-        # Load YTDLP_COOKIES_1, YTDLP_COOKIES_2, etc.
-        cookie_num = 1
+        # Load YTDLP_COOKIES_INSTAGRAM_1, YTDLP_COOKIES_INSTAGRAM_2, etc. (and legacy numbered)
+        for prefix in ["YTDLP_COOKIES_", "YTDLP_COOKIES_INSTAGRAM_"]:
+            i = 1
+            while True:
+                val = os.getenv(f"{prefix}{i}", "")
+                if not val: break
+                if val not in self.YTDLP_COOKIES_INSTAGRAM:
+                    self.YTDLP_COOKIES_INSTAGRAM.append(val)
+                i += 1
+        
+        # Load YouTube cookies
+        youtube_cookie = os.getenv("YTDLP_COOKIES_YOUTUBE", "")
+        if youtube_cookie:
+            self.YTDLP_COOKIES_YOUTUBE.append(youtube_cookie)
+        
+        # Load YTDLP_COOKIES_YOUTUBE_1, YTDLP_COOKIES_YOUTUBE_2, etc.
+        youtube_num = 1
         while True:
-            cookie_var = f"YTDLP_COOKIES_{cookie_num}"
+            cookie_var = f"YTDLP_COOKIES_YOUTUBE_{youtube_num}"
             cookie_value = os.getenv(cookie_var, "")
             
             if not cookie_value:
                 break
                 
-            self.YTDLP_COOKIES.append(cookie_value)
-            cookie_num += 1
+            self.YTDLP_COOKIES_YOUTUBE.append(cookie_value)
+            youtube_num += 1
         
         if self.ENABLE_DEBUG_LOGS:
-            print(f"🍪 Loaded {len(self.YTDLP_COOKIES)} Instagram cookie account(s)")
+            print(f"🍪 Loaded {len(self.YTDLP_COOKIES_INSTAGRAM)} Instagram cookie account(s)")
+            print(f"🍪 Loaded {len(self.YTDLP_COOKIES_YOUTUBE)} YouTube cookie account(s)")
 
     
-    def validate(self) -> None:
+    def validate(self) -> bool:
         """Validate that all required environment variables are set"""
         required_vars = {
             "GEMINI_API_KEY": self.GEMINI_API_KEY,
@@ -72,23 +92,20 @@ class Settings:
         missing = [key for key, value in required_vars.items() if not value]
         
         if missing:
-            raise ValueError(
-                f"❌ Missing required environment variables: {', '.join(missing)}\n"
-                f"Please set these in your .env file or environment."
-            )
+            print(f"⚠️ Warning: Missing required environment variables: {', '.join(missing)}")
+            print("⚠️ Some features (Recognition, Spotify Save) will be disabled.")
+            return False
         
-        print("✅ All required environment variables are set")
-        print(f"🌍 Environment: {self.ENVIRONMENT}")
-        print(f"🔒 CORS Origins: {', '.join(self.ALLOWED_ORIGINS)}")
-        print(f"⏱️  Rate Limit: {self.RATE_LIMIT_PER_DAY} requests/day")
+        if self.ENABLE_DEBUG_LOGS:
+            print("✅ All required environment variables are set")
+            print(f"🌍 Environment: {self.ENVIRONMENT}")
+            print(f"🔒 CORS Origins: {', '.join(self.ALLOWED_ORIGINS)}")
+            print(f"⏱️  Rate Limit: {self.RATE_LIMIT_PER_DAY} requests/day")
+        return True
 
 
 # Global settings instance
 settings = Settings()
 
-# Validate on import
-try:
-    settings.validate()
-except ValueError as e:
-    print(str(e))
-    raise
+# Validate on import (Don't crash, just log)
+settings.validate()
