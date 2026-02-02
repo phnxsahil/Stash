@@ -79,13 +79,30 @@ async def recognize_reel(req: ReelRequest, request: Request):
         raise HTTPException(status_code=422, detail="Could not download audio. Instagram/TikTok might be blocking the request. Try a different link.")
 
     try:
-        # 2. ASK SHAZAM (Audio Fingerprinting)
+        # 2. ASK SHAZAM (Audio Fingerprinting) with Retry Logic
         if settings.ENABLE_DEBUG_LOGS:
             print(f"🎵 Fingerprinting with Shazam: {audio_filename}")
         shazam = Shazam()
         
-        # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
-        out = await shazam.recognize(audio_filename)
+        # Retry logic for Shazam API (handles connection timeouts on serverless)
+        out = None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                out = await shazam.recognize(audio_filename)
+                break  # Success, exit retry loop
+            except Exception as shazam_error:
+                if attempt < max_retries - 1:
+                    wait_time = attempt + 1  # SPEED: Faster backoff: 1s, 2s
+                    print(f"⚠️ Shazam attempt {attempt + 1} failed: {shazam_error}. Retrying in {wait_time}s...")
+                    import asyncio
+                    await asyncio.sleep(wait_time)
+                else:
+                    print(f"❌ Shazam failed after {max_retries} attempts: {shazam_error}")
+                    raise shazam_error
+        
+        if not out:
+            raise Exception("Shazam recognition returned no data")
         
         # Cleanup audio immediately
         if os.path.exists(audio_filename): os.remove(audio_filename)
@@ -131,10 +148,17 @@ def _download_with_options(url, use_cookies=False):
         filename = f"/tmp/temp_{int(time.time())}"
         has_ffmpeg = shutil.which("ffmpeg") is not None
         
+        # Detect platform from URL
+        is_youtube = 'youtube.com' in url or 'youtu.be' in url
+        is_instagram = 'instagram.com' in url
+        
         ydl_opts = {
             'quiet': False, 
             'no_warnings': False,
             'nocheckcertificate': True,
+            # SPEED: Only download first 15 seconds (Shazam identifies in ~5s)
+            'download_ranges': lambda info, ydl: [{'start_time': 0, 'end_time': 15}],
+            'force_keyframes_at_cuts': True,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -143,33 +167,54 @@ def _download_with_options(url, use_cookies=False):
             }
         }
 
-        # Add cookies with rotation support
-        if use_cookies and settings.YTDLP_COOKIES:
+        # Add cookies with rotation support based on platform
+        if use_cookies:
             import random
             
-            # Randomly select from available cookies for load distribution
-            cookies_content = random.choice(settings.YTDLP_COOKIES)
-            cookie_file = '/tmp/cookies.txt'
+            cookies_content = None
+            platform_name = ""
             
-            try:
-                with open(cookie_file, 'w') as f:
-                    f.write(cookies_content)
-                ydl_opts['cookiefile'] = cookie_file
-                
+            # Select cookies based on URL type
+            if is_youtube and settings.YTDLP_COOKIES_YOUTUBE:
+                cookies_content = random.choice(settings.YTDLP_COOKIES_YOUTUBE)
+                platform_name = "YouTube"
+                cookie_file = '/tmp/youtube_cookies.txt'
+            elif is_instagram and settings.YTDLP_COOKIES_INSTAGRAM:
+                cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
+                platform_name = "Instagram"
+                cookie_file = '/tmp/instagram_cookies.txt'
+            elif settings.YTDLP_COOKIES_INSTAGRAM:
+                # Fallback to Instagram cookies for other platforms (TikTok, etc.)
+                cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
+                platform_name = "General"
+                cookie_file = '/tmp/cookies.txt'
+            
+            if cookies_content:
+                try:
+                    with open(cookie_file, 'w') as f:
+                        f.write(cookies_content)
+                    ydl_opts['cookiefile'] = cookie_file
+                    
+                    if settings.ENABLE_DEBUG_LOGS:
+                        print(f"🍪 Using {platform_name} cookies for download")
+                except Exception as e:
+                    print(f"⚠️ Cookie file creation failed: {e}")
+            else:
                 if settings.ENABLE_DEBUG_LOGS:
-                    cookie_index = settings.YTDLP_COOKIES.index(cookies_content) + 1
-                    print(f"🍪 Using cookie account #{cookie_index} (Pool: {len(settings.YTDLP_COOKIES)} accounts)")
-            except Exception as e:
-                print(f"⚠️ Cookie file creation failed: {e}")
+                    print(f"⚠️ No cookies available for {platform_name or 'this platform'}")
         else:
             if settings.ENABLE_DEBUG_LOGS:
                 print("🌐 Trying cookieless download (public post)...")
 
         if has_ffmpeg:
             ydl_opts.update({
-                'format': 'bestaudio/best',
+                'format': 'worstaudio/worst',  # SPEED: Lowest quality is fine for fingerprinting
                 'outtmpl': filename,
-                'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}],
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '64',  # SPEED: 64kbps is enough for Shazam
+                }],
             })
         else:
             ydl_opts.update({
