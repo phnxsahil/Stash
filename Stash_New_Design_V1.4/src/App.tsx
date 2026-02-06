@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
 import { SettingsView } from './components/SettingsView';
@@ -10,13 +10,32 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner';
-import { api, Song, SongMatch, Playlist } from './lib/api';
-import { supabase } from './lib/supabase';
-import { logger } from './lib/logger';
-import { calculateStreak } from './lib/analytics';
+import { toast } from 'sonner@2.0.3';
+import { api } from './lib/api';
+
+interface Song {
+  id: string;
+  song: string;
+  artist: string;
+  source: string;
+  album_art_url: string;
+  preview_url?: string;
+  created_at?: string;
+}
+
+interface SongMatch {
+  id: string;
+  song: string;
+  artist: string;
+  album_art_url: string;
+  preview_url?: string;
+}
+
+interface Playlist {
+  id: string;
+  name: string;
+}
 
 type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
 
@@ -37,7 +56,6 @@ interface AppState {
   isProcessing: boolean;
   processingStage: 1 | 2 | 3 | 'success' | 'error';
   processingError?: string;
-  hasSpotifyToken: boolean;
 }
 
 export default function App() {
@@ -54,8 +72,7 @@ export default function App() {
       showModal: false,
       currentView: 'landing',
       isLoadingHistory: false,
-      hasSpotifyToken: false,
-      autoAddTopMatch: true, // Default to true as requested
+      autoAddTopMatch: false,
       defaultPlaylistId: '1',
       playlists: [],
       theme: savedTheme || 'dark',
@@ -64,102 +81,6 @@ export default function App() {
       processingError: undefined,
     };
   });
-
-  // Force mood board refresh when songs change
-  const [moodBoardKey, setMoodBoardKey] = useState(0);
-
-  const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
-  const sharedUrlRef = useRef<string | null>(null);
-  const stashSubmitRef = useRef<((url: string) => Promise<void>) | null>(null);
-
-  // Handle Share Target on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedUrlParam = params.get('url');
-    const sharedText = params.get('text') || params.get('title');
-    const payload = sharedUrlParam || sharedText;
-
-    if (!payload || sharedUrlRef.current) return;
-
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const matches = payload.match(urlRegex);
-    const cleanUrl = sharedUrlParam || (matches && matches[0]);
-
-    if (!cleanUrl) return;
-
-    sharedUrlRef.current = cleanUrl;
-    setPendingSharedUrl(cleanUrl);
-
-    // Clean the URL bar so refreshes don't resubmit the payload
-    window.history.replaceState({}, document.title, '/');
-  }, []);
-
-  useEffect(() => {
-    if (!pendingSharedUrl || !state.isLoggedIn) return;
-
-    stashSubmitRef.current?.(pendingSharedUrl);
-    sharedUrlRef.current = null;
-    setPendingSharedUrl(null);
-  }, [pendingSharedUrl, state.isLoggedIn]);
-
-  // Handle Auth Session
-  useEffect(() => {
-    const checkSession = async () => {
-      logger.log('🔐 Checking auth session...');
-      const { data: { session } } = await supabase.auth.getSession();
-      logger.log('🔐 Session:', session ? 'Found' : 'Not found');
-      if (session) {
-        handleAuthSuccess(session.user);
-      }
-    };
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        logger.log('🔐 Auth state changed:', event, session ? 'Session present' : 'No session');
-        if (session) {
-          handleAuthSuccess(session.user);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleAuthSuccess = async (user: any) => {
-    logger.log('✅ Auth success! User:', user.email);
-    const token = await api.getSpotifyToken();
-
-    setState((prev) => ({
-      ...prev,
-      isLoggedIn: true,
-      hasSpotifyToken: !!token,
-      userEmail: user.email || '',
-      userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-      currentView: 'app',
-    }));
-    logger.log('✅ Redirecting to dashboard...');
-
-    try {
-      // Parallelize for speed and decoupling
-      logger.log('🔄 Fetching user data ecosystem...');
-      const results = await Promise.allSettled([
-        api.getUserPlaylists(),
-        loadHistory()
-      ]);
-
-      const [playlistsRes] = results;
-      if (playlistsRes.status === 'fulfilled') {
-        setState((prev) => ({ ...prev, playlists: playlistsRes.value }));
-      } else {
-        logger.warn("Auth: Playlists failed to load (Token might be expired):", playlistsRes.reason);
-      }
-    } catch (err) {
-      logger.error("Auth: Critical Failure in data ecosystem:", err);
-    }
-  };
-
-  const streak = useMemo(() => calculateStreak(state.history), [state.history]);
 
   // Load history when user logs in
   useEffect(() => {
@@ -172,12 +93,9 @@ export default function App() {
   useEffect(() => {
     if (state.theme === 'dark') {
       document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
     } else {
       document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
     }
-    document.documentElement.className = state.theme;
     localStorage.setItem('stash-theme', state.theme);
   }, [state.theme]);
 
@@ -187,7 +105,7 @@ export default function App() {
       const history = await api.getUserHistory();
       setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
     } catch (error) {
-      logger.error('Failed to load history:', error);
+      console.error('Failed to load history:', error);
       setState((prev) => ({ ...prev, isLoadingHistory: false }));
       toast.error('Failed to load history');
     }
@@ -195,9 +113,23 @@ export default function App() {
 
   const handleConnectSpotify = async () => {
     try {
-      await api.connectSpotify();
+      toast.loading('Connecting to Spotify...');
+      const user = await api.connectSpotify();
+      const userData = await api.getUserData();
+      const playlists = await api.getUserPlaylists();
+      toast.dismiss();
+      setState((prev) => ({
+        ...prev,
+        isLoggedIn: true,
+        userName: user.name,
+        userEmail: userData.email,
+        playlists,
+        currentView: 'app',
+      }));
+      toast.success('Connected to Spotify!');
     } catch (error) {
-      logger.error('Failed to connect:', error);
+      console.error('Failed to connect:', error);
+      toast.dismiss();
       toast.error('Failed to connect to Spotify');
     }
   };
@@ -215,50 +147,53 @@ export default function App() {
         showModal: false,
         currentView: 'landing',
         isLoadingHistory: false,
-        hasSpotifyToken: false,
-        autoAddTopMatch: true,
+        autoAddTopMatch: false,
         defaultPlaylistId: '1',
         playlists: [],
-        theme: state.theme,
+        theme: state.theme, // Preserve theme on logout
         isProcessing: false,
         processingStage: 1,
         processingError: undefined,
       });
       toast.success('Logged out successfully');
     } catch (error) {
-      logger.error('Failed to logout:', error);
+      console.error('Failed to logout:', error);
       toast.error('Failed to logout');
     }
   };
 
   const handleStashSubmit = async (url: string) => {
     try {
-      setState((prev) => ({
-        ...prev,
+      setState((prev) => ({ 
+        ...prev, 
         currentUrl: url,
         isProcessing: true,
         processingStage: 1,
         processingError: undefined
       }));
-
-      const matches = await api.stashUrl(url, (status) => {
-        if (status === "Extracting Audio..." || status === "Downloading...") {
-          setState(prev => ({ ...prev, processingStage: 1 }));
-        } else if (status === "Identifying Song...") {
-          setState(prev => ({ ...prev, processingStage: 2 }));
-        } else if (status === "Verifying with Spotify...") {
-          setState(prev => ({ ...prev, processingStage: 3 }));
-        }
-      });
-
+      
+      // Simulate stage progression
+      setTimeout(() => {
+        setState((prev) => ({ ...prev, processingStage: 2 }));
+      }, 800);
+      
+      setTimeout(() => {
+        setState((prev) => ({ ...prev, processingStage: 3 }));
+      }, 1600);
+      
+      const matches = await api.stashUrl(url);
+      
+      // Success stage
       setState((prev) => ({ ...prev, processingStage: 'success' }));
-
-      setTimeout(async () => {
+      
+      setTimeout(() => {
         setState((prev) => ({ ...prev, isProcessing: false, processingStage: 1 }));
-
+        
         if (state.autoAddTopMatch && matches.length > 0) {
-          await handleSongSelection(matches[0]);
+          // Auto-add the top match
+          handleSongSelection(matches[0]);
         } else {
+          // Show modal for selection
           setState((prev) => ({
             ...prev,
             currentMatches: matches,
@@ -266,70 +201,64 @@ export default function App() {
           }));
         }
       }, 1000);
-
+      
     } catch (error) {
-      logger.error('Failed to stash:', error);
-      setState((prev) => ({
-        ...prev,
+      console.error('Failed to stash:', error);
+      setState((prev) => ({ 
+        ...prev, 
         processingStage: 'error',
         processingError: 'Failed to find song. Please try again.'
       }));
-
-      // Do NOT auto-close on error to allow retry
+      
+      setTimeout(() => {
+        setState((prev) => ({ 
+          ...prev, 
+          isProcessing: false,
+          processingStage: 1,
+          processingError: undefined
+        }));
+      }, 2000);
+      
       toast.error('Failed to find song. Please try again.');
     }
   };
-  stashSubmitRef.current = handleStashSubmit;
 
   const handleSongSelection = async (song: SongMatch) => {
     try {
+      // Close modal
       setState((prev) => ({ ...prev, showModal: false }));
+      
+      // Extract source from URL (simplified)
       const source = extractSource(state.currentUrl);
-      const { song: newSong } = await api.addTrack(song, source);
-
+      
+      // Add track
+      const newSong = await api.addTrack(song, source);
+      
+      // Add to history
       setState((prev) => ({
         ...prev,
         history: [newSong, ...prev.history],
         currentMatches: [],
         currentUrl: '',
       }));
-
-      // Refresh mood board with new song
-      setMoodBoardKey(prev => prev + 1);
-
+      
       toast.success(`"${song.song}" added to your library!`);
     } catch (error) {
-      logger.error('Failed to add track:', error);
+      console.error('Failed to add track:', error);
       toast.error('Failed to add song to library');
     }
   };
 
   const handleDeleteSong = async (id: string) => {
     try {
-      // Find the song to get its Spotify track ID
-      const song = state.history.find(s => s.id === id);
-
-      // Remove from Spotify first (if we have the track info)
-      if (song?.spotify_url) {
-        const trackId = song.spotify_url.split('/').pop()?.split('?')[0];
-        if (trackId) {
-          await api.removeFromSpotify(trackId, state.defaultPlaylistId);
-        }
-      }
-
-      // Then remove from Stash history
       await api.deleteSong(id);
       setState((prev) => ({
         ...prev,
         history: prev.history.filter((song) => song.id !== id),
       }));
-
-      // Refresh mood board after deletion
-      setMoodBoardKey(prev => prev + 1);
-
-      toast.success('Song removed from Spotify and history');
+      toast.success('Song removed from history');
     } catch (error) {
-      logger.error('Failed to delete song:', error);
+      console.error('Failed to delete song:', error);
       toast.error('Failed to delete song');
     }
   };
@@ -338,9 +267,11 @@ export default function App() {
     try {
       await api.updateUserPreferences({ autoAddTopMatch: value });
       setState((prev) => ({ ...prev, autoAddTopMatch: value }));
-      toast.success(value ? 'Auto-add enabled' : 'Auto-add disabled');
+      toast.success(
+        value ? 'Auto-add enabled' : 'Auto-add disabled'
+      );
     } catch (error) {
-      logger.error('Failed to update preferences:', error);
+      console.error('Failed to update preferences:', error);
       toast.error('Failed to update preferences');
     }
   };
@@ -352,7 +283,7 @@ export default function App() {
       }
       setState((prev) => ({ ...prev, theme: value }));
     } catch (error) {
-      logger.error('Failed to update theme:', error);
+      console.error('Failed to update theme:', error);
       toast.error('Failed to update theme');
     }
   };
@@ -364,7 +295,7 @@ export default function App() {
       const playlist = state.playlists.find(p => p.id === playlistId);
       toast.success(`Default playlist set to ${playlist?.name || 'selected playlist'}`);
     } catch (error) {
-      logger.error('Failed to update playlist:', error);
+      console.error('Failed to update playlist:', error);
       toast.error('Failed to update playlist');
     }
   };
@@ -372,12 +303,6 @@ export default function App() {
   const handleNavigate = (view: ViewType) => {
     setState((prev) => ({ ...prev, currentView: view }));
   };
-
-  // Expose for settings navigation
-  useEffect(() => {
-    (window as any).onNavigate = handleNavigate;
-    return () => { delete (window as any).onNavigate; };
-  }, []);
 
   const handleBack = () => {
     if (state.isLoggedIn) {
@@ -404,22 +329,7 @@ export default function App() {
       case 'help':
         return <HelpView onBack={handleBack} theme={state.theme} />;
       case 'stats':
-        return (
-          <StatsPageView
-            key={moodBoardKey}
-            onBack={handleBack}
-            theme={state.theme}
-            history={state.history}
-            userName={state.userName}
-            songsThisWeek={state.history.filter(s => {
-              const date = new Date(s.created_at || '');
-              const now = new Date();
-              const diff = now.getTime() - date.getTime();
-              return diff < 7 * 24 * 60 * 60 * 1000;
-            }).length}
-            streak={streak}
-          />
-        );
+        return <StatsPageView onBack={handleBack} theme={state.theme} history={state.history} />;
       case 'settings':
         return (
           <SettingsView
@@ -429,14 +339,11 @@ export default function App() {
             defaultPlaylistId={state.defaultPlaylistId}
             playlists={state.playlists}
             theme={state.theme}
-            hasSpotifyToken={state.hasSpotifyToken}
-            onReconnectSpotify={handleConnectSpotify}
             onBack={handleBack}
             onLogout={handleLogout}
             onToggleAutoAdd={handleToggleAutoAdd}
             onPlaylistChange={handlePlaylistChange}
             onToggleTheme={handleToggleTheme}
-            onOpenStats={() => handleNavigate('stats')}
           />
         );
       case 'app':
@@ -444,13 +351,6 @@ export default function App() {
           <AppView
             userName={state.userName}
             history={state.history}
-            songsThisWeek={state.history.filter(s => {
-              const date = new Date(s.created_at || '');
-              const now = new Date();
-              const diff = now.getTime() - date.getTime();
-              return diff < 7 * 24 * 60 * 60 * 1000;
-            }).length}
-            streak={streak}
             autoAddTopMatch={state.autoAddTopMatch}
             theme={state.theme}
             onLogout={handleLogout}
@@ -465,9 +365,9 @@ export default function App() {
       case 'landing':
       default:
         return (
-          <LandingView
-            onConnect={handleConnectSpotify}
-            theme={state.theme}
+          <LandingView 
+            onConnect={handleConnectSpotify} 
+            theme={state.theme} 
             onToggleTheme={handleToggleTheme}
             onNavigate={(page) => handleNavigate(page)}
           />
@@ -476,42 +376,31 @@ export default function App() {
   };
 
   return (
-    <ErrorBoundary>
-      <div className="size-full">
-        {renderView()}
-
-        <ConfirmationModal
-          isOpen={state.showModal}
-          matches={state.currentMatches}
-          onClose={() => setState((prev) => ({ ...prev, showModal: false }))}
-          onSelectSong={handleSongSelection}
-        />
-
-        <ProcessingOverlay
-          isVisible={state.isProcessing}
-          stage={state.processingStage}
-          errorMessage={state.processingError}
-          onClose={() => setState((prev) => ({
-            ...prev,
-            isProcessing: false,
-            processingStage: 1,
-            processingError: undefined
-          }))}
-          onRetry={() => {
-            setState((prev) => ({
-              ...prev,
-              isProcessing: false,
-              processingStage: 1,
-              processingError: undefined
-            }));
-            handleStashSubmit(state.currentUrl);
-          }}
-        />
-        <PWAInstallPrompt />
-        <PWARegistration />
-
-        <Toaster position="bottom-right" theme={state.theme} />
-      </div>
-    </ErrorBoundary>
+    <div className="size-full">
+      {renderView()}
+      
+      <ConfirmationModal
+        isOpen={state.showModal}
+        matches={state.currentMatches}
+        onClose={() => setState((prev) => ({ ...prev, showModal: false }))}
+        onSelectSong={handleSongSelection}
+      />
+      
+      <ProcessingOverlay 
+        isVisible={state.isProcessing}
+        stage={state.processingStage}
+        errorMessage={state.processingError}
+        onClose={() => setState((prev) => ({ 
+          ...prev, 
+          isProcessing: false,
+          processingStage: 1,
+          processingError: undefined 
+        }))}
+      />
+      <PWAInstallPrompt />
+      <PWARegistration />
+      
+      <Toaster position="bottom-right" theme={state.theme} />
+    </div>
   );
 }

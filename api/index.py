@@ -2,10 +2,10 @@ import os
 import time
 import json
 import glob
+import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import requests
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import yt_dlp
@@ -13,6 +13,11 @@ import shutil
 
 # Import centralized configuration
 from api.config import settings
+from shazamio import Shazam
+from collections import defaultdict
+import random
+import asyncio
+import requests
 
 # Configure Spotify with validated credentials
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
@@ -39,10 +44,6 @@ class ReelRequest(BaseModel):
 def health_check():
     return {"status": "Antigravity Engine Online 🟢"}
 
-
-from shazamio import Shazam
-from collections import defaultdict
-import time
 
 # Rate limiting storage (in-memory for now)
 request_log = defaultdict(list)
@@ -95,7 +96,6 @@ async def recognize_reel(req: ReelRequest, request: Request):
                 if attempt < max_retries - 1:
                     wait_time = attempt + 1  # SPEED: Faster backoff: 1s, 2s
                     print(f"⚠️ Shazam attempt {attempt + 1} failed: {shazam_error}. Retrying in {wait_time}s...")
-                    import asyncio
                     await asyncio.sleep(wait_time)
                 else:
                     print(f"❌ Shazam failed after {max_retries} attempts: {shazam_error}")
@@ -169,8 +169,6 @@ def _download_with_options(url, use_cookies=False):
 
         # Add cookies with rotation support based on platform
         if use_cookies:
-            import random
-            
             cookies_content = None
             platform_name = ""
             
@@ -319,7 +317,7 @@ def analyze_vibe_summary(request: AnalyzeVibeRequest):
         return {"vibe": "No music yet! Start stashing to find your vibe."}
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         song_list = ", ".join(request.songs[:20]) # Limit to last 20 to save tokens
         prompt = f"Here is a user's recently liked music: {song_list}. In one short, fun sentence (max 10 words), describe their current 'music vibe' or mood. Be creative like Spotify Wrapped. Example: 'Melancholic late-night techno drive by yourself.'"
         
