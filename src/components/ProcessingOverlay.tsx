@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music2, Download, Fingerprint, Search, CheckCircle2, XCircle } from 'lucide-react';
+import { Music2, Download, Fingerprint, Search, CheckCircle2, XCircle, X } from 'lucide-react';
+import { RetryButton } from './RetryButton';
+import { Button } from './ui/button';
 
 interface ProcessingOverlayProps {
   isVisible: boolean;
   stage: 1 | 2 | 3 | 'success' | 'error';
   errorMessage?: string;
   onClose?: () => void;
+  onRetry?: () => void;
 }
+
+const STAGE_DURATIONS = {
+  extracting: 1200, // 1.2s
+  identifying: 1500, // 1.5s
+  syncing: 1800, // 1.8s
+};
 
 const stages = [
   {
@@ -34,7 +43,8 @@ export function ProcessingOverlay({
   isVisible,
   stage,
   errorMessage,
-  onClose
+  onClose,
+  onRetry
 }: ProcessingOverlayProps) {
   const [progress, setProgress] = useState(0);
   const isError = stage === 'error';
@@ -63,15 +73,15 @@ export function ProcessingOverlay({
     return () => clearInterval(timer);
   }, [isVisible, stage, isError, isSuccess, progress]);
 
-  // Auto-close after success or error
+  // Auto-close after success ONLY
   useEffect(() => {
-    if ((isSuccess || isError) && onClose) {
+    if (isSuccess && onClose) {
       const timer = setTimeout(() => {
         onClose();
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isSuccess, isError, onClose]);
+  }, [isSuccess, onClose]);
 
   return (
     <AnimatePresence>
@@ -89,6 +99,20 @@ export function ProcessingOverlay({
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
             className="relative w-full max-w-md"
           >
+            {/* Close Button (Visible on Error) */}
+            {isError && onClose && (
+               <div className="absolute -top-12 right-0 z-50">
+                <Button
+                  onClick={onClose}
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20 text-white"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+               </div>
+            )}
+
             {/* Glass Card */}
             <div className={`
               relative rounded-3xl p-12 
@@ -171,6 +195,13 @@ export function ProcessingOverlay({
                     }
                   </p>
                 </div>
+
+                {/* Retry Button */}
+                {isError && onRetry && (
+                  <div className="mt-2">
+                    <RetryButton onRetry={onRetry} />
+                  </div>
+                )}
               </div>
 
               {/* Stage Indicators */}
