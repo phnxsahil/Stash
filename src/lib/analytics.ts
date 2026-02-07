@@ -5,8 +5,22 @@ export function calculateStreak(history: Song[]): number {
 
   // Convert history dates to YYYY-MM-DD strings to ignore time
   const dates = new Set(
-    history.map(song => new Date(song.created_at || '').toISOString().split('T')[0])
+    history
+      .map(song => {
+        if (!song.created_at) return null;
+        try {
+          const date = new Date(song.created_at);
+          // Check for Invalid Date
+          if (isNaN(date.getTime())) return null;
+          return date.toISOString().split('T')[0];
+        } catch {
+          return null;
+        }
+      })
+      .filter((date): date is string => date !== null)
   );
+
+  if (dates.size === 0) return 0;
 
   const sortedDates = Array.from(dates).sort().reverse();
   const today = new Date().toISOString().split('T')[0];
