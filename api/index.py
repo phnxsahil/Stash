@@ -44,6 +44,31 @@ def get_spotify_client() -> Optional[spotipy.Spotify]:
 
 sp = get_spotify_client()
 
+# --- Spotify search cache (TTL-based) ---
+_spotify_cache: dict[str, tuple[float, dict]] = {}
+SPOTIFY_CACHE_TTL = 3600  # 1 hour
+
+def _get_cached_spotify(track: str, artist: str) -> Optional[dict]:
+    """Return cached Spotify result if still fresh."""
+    key = f"{track.lower().strip()}|{artist.lower().strip()}"
+    entry = _spotify_cache.get(key)
+    if entry and (time.time() - entry[0]) < SPOTIFY_CACHE_TTL:
+        logger.debug("Spotify cache HIT for %s - %s", track, artist)
+        return entry[1]
+    return None
+
+def _set_cached_spotify(track: str, artist: str, result: dict) -> None:
+    """Store a Spotify result in cache."""
+    key = f"{track.lower().strip()}|{artist.lower().strip()}"
+    _spotify_cache[key] = (time.time(), result)
+
+    # Evict stale entries if cache grows large
+    if len(_spotify_cache) > 500:
+        now = time.time()
+        stale_keys = [k for k, (ts, _) in _spotify_cache.items() if now - ts > SPOTIFY_CACHE_TTL]
+        for k in stale_keys:
+            del _spotify_cache[k]
+
 app = FastAPI(title="Stash Engine API v1.1.0")
 
 # Configure CORS with environment-based origins (SECURE)
@@ -264,6 +289,11 @@ def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]
 
 def search_spotify_strict(track: str, artist: str) -> dict:
     """Search Spotify for a track, prioritizing exact artist matches and sorting by popularity."""
+    # Check cache first
+    cached = _get_cached_spotify(track, artist)
+    if cached:
+        return cached
+
     query = f"{track} {artist}" 
     
     current_sp = sp or get_spotify_client()
@@ -313,6 +343,8 @@ def search_spotify_strict(track: str, artist: str) -> dict:
         "confidence": 0.99
     }
 
+    # Cache the result
+    _set_cached_spotify(track, artist, result)
     return result
 
 class SaveWebTrackRequest(BaseModel):
