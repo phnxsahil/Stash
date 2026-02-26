@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: stash-api
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: YTDLP_COOKIES
+        sync: false
+      - key: RATE_LIMIT_PER_DAY
+        value: "10"
+      - key: ENABLE_DEBUG_LOGS
+        value: "false"
+      - key: ALLOWED_ORIGINS
+        # Update this with your actual Vercel frontend URL if different
+        value: "https://stashyourmusic.vercel.app,http://localhost:5173"
+      - key: ENVIRONMENT
+        value: "production"
