@@ -1,11 +1,6 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
-import { SettingsView } from './components/SettingsView';
-import { PrivacyView } from './components/PrivacyView';
-import { AboutView } from './components/AboutView';
-import { HelpView } from './components/HelpView';
-import { StatsPageView } from './components/StatsPageView';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
@@ -13,36 +8,22 @@ import { PWARegistration } from './components/PWARegistration';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
-import { api, Song, SongMatch, Playlist } from './lib/api';
+import { api } from './lib/api';
 import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
 import { calculateStreak } from './lib/analytics';
+import type { AppState, ViewType, SongMatch, Theme } from './types';
 
-type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
-
-interface AppState {
-  isLoggedIn: boolean;
-  userName: string;
-  userEmail: string;
-  history: Song[];
-  currentMatches: SongMatch[];
-  currentUrl: string;
-  showModal: boolean;
-  currentView: ViewType;
-  isLoadingHistory: boolean;
-  autoAddTopMatch: boolean;
-  defaultPlaylistId: string;
-  playlists: Playlist[];
-  theme: 'light' | 'dark';
-  isProcessing: boolean;
-  processingStage: 1 | 2 | 3 | 'success' | 'error';
-  processingError?: string;
-  hasSpotifyToken: boolean;
-}
+// Lazy-loaded views (only fetched when navigated to)
+const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
+const PrivacyView = lazy(() => import('./components/PrivacyView').then(m => ({ default: m.PrivacyView })));
+const AboutView = lazy(() => import('./components/AboutView').then(m => ({ default: m.AboutView })));
+const HelpView = lazy(() => import('./components/HelpView').then(m => ({ default: m.HelpView })));
+const StatsPageView = lazy(() => import('./components/StatsPageView').then(m => ({ default: m.StatsPageView })));
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-function createDefaultState(theme?: 'light' | 'dark'): AppState {
+function createDefaultState(theme?: Theme): AppState {
   return {
     isLoggedIn: false,
     userName: '',
@@ -75,7 +56,7 @@ function extractSource(url: string): string {
 
 export default function App() {
   const [state, setState] = useState<AppState>(() => {
-    const savedTheme = localStorage.getItem('stash-theme') as 'light' | 'dark' | null;
+    const savedTheme = localStorage.getItem('stash-theme') as Theme | null;
     return createDefaultState(savedTheme || undefined);
   });
 
@@ -393,44 +374,55 @@ export default function App() {
 
   const extractSourceFromUrl = useCallback(extractSource, []);
 
+  // Suspense fallback for lazy-loaded views
+  const viewFallback = (
+    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-[#1DB954] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
   const renderView = () => {
     switch (state.currentView) {
       case 'privacy':
-        return <PrivacyView onBack={handleBack} theme={state.theme} />;
+        return <Suspense fallback={viewFallback}><PrivacyView onBack={handleBack} theme={state.theme} /></Suspense>;
       case 'about':
-        return <AboutView onBack={handleBack} theme={state.theme} />;
+        return <Suspense fallback={viewFallback}><AboutView onBack={handleBack} theme={state.theme} /></Suspense>;
       case 'help':
-        return <HelpView onBack={handleBack} theme={state.theme} />;
+        return <Suspense fallback={viewFallback}><HelpView onBack={handleBack} theme={state.theme} /></Suspense>;
       case 'stats':
         return (
-          <StatsPageView
-            key={moodBoardKey}
-            onBack={handleBack}
-            theme={state.theme}
-            history={state.history}
-            userName={state.userName}
-            songsThisWeek={songsThisWeek}
-            streak={streak}
-          />
+          <Suspense fallback={viewFallback}>
+            <StatsPageView
+              key={moodBoardKey}
+              onBack={handleBack}
+              theme={state.theme}
+              history={state.history}
+              userName={state.userName}
+              songsThisWeek={songsThisWeek}
+              streak={streak}
+            />
+          </Suspense>
         );
       case 'settings':
         return (
-          <SettingsView
-            userName={state.userName}
-            userEmail={state.userEmail}
-            autoAddTopMatch={state.autoAddTopMatch}
-            defaultPlaylistId={state.defaultPlaylistId}
-            playlists={state.playlists}
-            theme={state.theme}
-            hasSpotifyToken={state.hasSpotifyToken}
-            onReconnectSpotify={handleConnectSpotify}
-            onBack={handleBack}
-            onLogout={handleLogout}
-            onToggleAutoAdd={handleToggleAutoAdd}
-            onPlaylistChange={handlePlaylistChange}
-            onToggleTheme={handleToggleTheme}
-            onOpenStats={() => handleNavigate('stats')}
-          />
+          <Suspense fallback={viewFallback}>
+            <SettingsView
+              userName={state.userName}
+              userEmail={state.userEmail}
+              autoAddTopMatch={state.autoAddTopMatch}
+              defaultPlaylistId={state.defaultPlaylistId}
+              playlists={state.playlists}
+              theme={state.theme}
+              hasSpotifyToken={state.hasSpotifyToken}
+              onReconnectSpotify={handleConnectSpotify}
+              onBack={handleBack}
+              onLogout={handleLogout}
+              onToggleAutoAdd={handleToggleAutoAdd}
+              onPlaylistChange={handlePlaylistChange}
+              onToggleTheme={handleToggleTheme}
+              onOpenStats={() => handleNavigate('stats')}
+            />
+          </Suspense>
         );
       case 'app':
         return (
