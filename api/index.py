@@ -5,6 +5,7 @@ import glob
 import logging
 import random
 import asyncio
+from functools import lru_cache
 from typing import Optional
 from collections import defaultdict
 
@@ -28,7 +29,8 @@ logging.basicConfig(
 )
 
 # Helper to get Spotify client (Handles missing credentials gracefully)
-def get_spotify_client():
+def get_spotify_client() -> Optional[spotipy.Spotify]:
+    """Create a Spotify client using client credentials flow."""
     if not settings.SPOTIFY_CLIENT_ID or not settings.SPOTIFY_CLIENT_SECRET:
         return None
     try:
@@ -37,7 +39,7 @@ def get_spotify_client():
             client_secret=settings.SPOTIFY_CLIENT_SECRET
         ))
     except Exception as e:
-        print(f"❌ Spotify Client Error: {e}")
+        logger.error("Spotify Client Error: %s", e)
         return None
 
 sp = get_spotify_client()
@@ -59,7 +61,7 @@ class ReelRequest(BaseModel):
 @app.get("/")
 @app.head("/")
 def health_check():
-    return {"status": "Antigravity Engine Online 🟢"}
+    return {"status": "Antigravity Engine Online ≡ƒƒó"}
 
 
 # Rate limiting storage (in-memory for now)
@@ -71,8 +73,8 @@ async def recognize_reel(req: ReelRequest, request: Request):
     client_ip = "unknown"
     try:
         # Try to get real IP from headers (for proxies/load balancers)
-        client_ip = request.headers.get("x-forwarded-for", "unknown").split(",")[0]
-    except:
+        client_ip = request.headers.get("x-forwarded-for", "unknown").split(",")[0].strip()
+    except (AttributeError, IndexError):
         pass
     
     # Rate limiting: 10 reels per IP per day
@@ -87,8 +89,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
     
     request_log[client_ip].append(now)
     
-    if settings.ENABLE_DEBUG_LOGS:
-        print(f"🚀 Processing: {req.url} (IP: {client_ip}, Count: {len(request_log[client_ip])})")
+    logger.debug("Processing: %s (IP: %s, Count: %d)", req.url, client_ip, len(request_log[client_ip]))
 
     # 0. CHECK CONFIGURATION
     if not settings.SPOTIFY_CLIENT_ID or not settings.SPOTIFY_CLIENT_SECRET:
@@ -98,7 +99,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
         )
     
     if not settings.GEMINI_API_KEY:
-        print("⚠️ Gemini API Key missing. Genre detection will be disabled.")
+        logger.warning("Gemini API Key missing. Genre detection will be disabled.")
 
     # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(req.url)
@@ -108,8 +109,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
 
     try:
         # 2. ASK SHAZAM (Audio Fingerprinting) with Retry Logic
-        if settings.ENABLE_DEBUG_LOGS:
-            print(f"🎵 Fingerprinting with Shazam: {audio_filename}")
+        logger.debug("Fingerprinting with Shazam: %s", audio_filename)
         shazam = Shazam()
         
         # Retry logic for Shazam API (handles connection timeouts on serverless)
@@ -122,10 +122,10 @@ async def recognize_reel(req: ReelRequest, request: Request):
             except Exception as shazam_error:
                 if attempt < max_retries - 1:
                     wait_time = attempt + 1  # SPEED: Faster backoff: 1s, 2s
-                    print(f"⚠️ Shazam attempt {attempt + 1} failed: {shazam_error}. Retrying in {wait_time}s...")
+                    logger.warning("Shazam attempt %d failed: %s. Retrying in %ds...", attempt + 1, shazam_error, wait_time)
                     await asyncio.sleep(wait_time)
                 else:
-                    print(f"❌ Shazam failed after {max_retries} attempts: {shazam_error}")
+                    logger.error("Shazam failed after %d attempts: %s", max_retries, shazam_error)
                     raise shazam_error
         
         if not out:
@@ -136,16 +136,14 @@ async def recognize_reel(req: ReelRequest, request: Request):
 
         # 3. PARSE SHAZAM RESULT
         if not out.get('matches'):
-            if settings.ENABLE_DEBUG_LOGS:
-                print("❌ Shazam found no matches.")
+            logger.debug("Shazam found no matches.")
             return {"success": False, "error": "Could not identify song from audio"}
 
         track_info = out['track']
         shazam_title = track_info['title']
         shazam_artist = track_info['subtitle']
         
-        if settings.ENABLE_DEBUG_LOGS:
-            print(f"🎯 Shazam Match: {shazam_title} by {shazam_artist}")
+        logger.debug("Shazam Match: %s by %s", shazam_title, shazam_artist)
 
         # 4. VERIFY WITH SPOTIFY (Get Playable URI)
         # We still search Spotify to get the URI for the frontend player/saving
@@ -153,12 +151,12 @@ async def recognize_reel(req: ReelRequest, request: Request):
 
     except Exception as e:
         error_msg = str(e)
-        print(f"❌ Recognition Error: {error_msg}")
+        logger.error("Recognition Error: %s", error_msg)
         
         # Cleanup audio if it still exists
         if audio_filename and os.path.exists(audio_filename): 
             try: os.remove(audio_filename)
-            except: pass
+            except OSError: pass
             
         # Return a more descriptive error based on the exception
         if "quota" in error_msg.lower():
@@ -168,20 +166,20 @@ async def recognize_reel(req: ReelRequest, request: Request):
         else:
             raise HTTPException(status_code=500, detail=f"Backend Error: {error_msg}")
 
-def download_audio(url):
-    """Downloads Instagram audio to /tmp. Tries without cookies first (public posts), then with cookies."""
+def download_audio(url: str) -> Optional[str]:
+    """Downloads audio to /tmp. Tries without cookies first (public posts), then with cookies."""
     
     # Try WITHOUT cookies first (works for public posts)
     result = _download_with_options(url, use_cookies=False)
     
     # If failed, retry WITH cookies (for private/restricted posts)
     if not result:
-        print("⚠️ Cookieless download failed. Retrying with authentication...")
+        logger.warning("Cookieless download failed. Retrying with authentication...")
         result = _download_with_options(url, use_cookies=True)
     
     return result
 
-def _download_with_options(url, use_cookies=False):
+def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]:
     """Internal function to download with or without cookies."""
     try:
         filename = f"/tmp/temp_{int(time.time())}"
@@ -231,17 +229,13 @@ def _download_with_options(url, use_cookies=False):
                     with open(cookie_file, 'w') as f:
                         f.write(cookies_content)
                     ydl_opts['cookiefile'] = cookie_file
-                    
-                    if settings.ENABLE_DEBUG_LOGS:
-                        print(f"🍪 Using {platform_name} cookies for download")
+                    logger.debug("Using %s cookies for download", platform_name)
                 except Exception as e:
-                    print(f"⚠️ Cookie file creation failed: {e}")
+                    logger.warning("Cookie file creation failed: %s", e)
             else:
-                if settings.ENABLE_DEBUG_LOGS:
-                    print(f"⚠️ No cookies available for {platform_name or 'this platform'}")
+                logger.debug("No cookies available for %s", platform_name or 'this platform')
         else:
-            if settings.ENABLE_DEBUG_LOGS:
-                print("🌐 Trying cookieless download (public post)...")
+            logger.debug("Trying cookieless download (public post)...")
 
         if has_ffmpeg:
             ydl_opts.update({
@@ -265,11 +259,11 @@ def _download_with_options(url, use_cookies=False):
         files = glob.glob(f"{filename}*")
         return files[0] if files else None
     except Exception as e:
-        print(f"Download Error: {e}")
+        logger.error("Download Error: %s", e)
         return None
 
-def search_spotify_strict(track, artist):
-    # Search with keywords (broader than strict field match, but sorted by popularity)
+def search_spotify_strict(track: str, artist: str) -> dict:
+    """Search Spotify for a track, prioritizing exact artist matches and sorting by popularity."""
     query = f"{track} {artist}" 
     
     current_sp = sp or get_spotify_client()
@@ -306,10 +300,9 @@ def search_spotify_strict(track, artist):
     candidates.sort(key=lambda x: x['popularity'], reverse=True)
     best = candidates[0]
     
-    if settings.ENABLE_DEBUG_LOGS:
-        print(f"🎯 Spotify Match (Popularity {best['popularity']}): {best['name']} by {best['artists'][0]['name']}")
+    logger.debug("Spotify Match (Popularity %d): %s by %s", best['popularity'], best['name'], best['artists'][0]['name'])
 
-    return {
+    result = {
         "success": True,
         "track": best['name'],
         "artist": best['artists'][0]['name'],
@@ -319,6 +312,8 @@ def search_spotify_strict(track, artist):
         "preview_url": best.get('preview_url'), 
         "confidence": 0.99
     }
+
+    return result
 
 class SaveWebTrackRequest(BaseModel):
     token: str
@@ -331,8 +326,8 @@ class RemoveTrackRequest(BaseModel):
     playlist_id: str = "1"  # Default to liked songs
 
 # Helper: AI Genre Detection
-def detect_genre_with_gemini(track_name, artist_name):
-    """Detect music genre using Gemini AI"""
+def detect_genre_with_gemini(track_name: str, artist_name: str) -> str:
+    """Detect music genre using Gemini AI."""
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         prompt = f"What is the primary music genre of the song '{track_name}' by '{artist_name}'? Return only ONE word (e.g., Techno, House, Pop, Rock, Ambient). Do not write sentences."
@@ -350,17 +345,16 @@ def detect_genre_with_gemini(track_name, artist_name):
         vibe = data['candidates'][0]['content']['parts'][0]['text'].strip().replace(".", "")
         return vibe
     except Exception as e:
-        print(f"⚠️ Gemini Genre Error: {e}")
+        logger.warning("Gemini Genre Error: %s", e)
         return "Unknown"
 
 class AnalyzeVibeRequest(BaseModel):
     songs: list[str] # List of "Song - Artist" strings
 
 @app.post("/analyze_vibe")
-def analyze_vibe_summary(request: AnalyzeVibeRequest):
-    """Analyze user's music vibe using AI"""
-    if settings.ENABLE_DEBUG_LOGS:
-        print(f"🔮 Analyzing Vibe for {len(request.songs)} songs...")
+def analyze_vibe_summary(request: AnalyzeVibeRequest) -> dict:
+    """Analyze user's music vibe using AI."""
+    logger.debug("Analyzing Vibe for %d songs...", len(request.songs))
     if not request.songs:
         return {"vibe": "No music yet! Start stashing to find your vibe."}
     
@@ -380,18 +374,16 @@ def analyze_vibe_summary(request: AnalyzeVibeRequest):
         data = res.json()
         
         vibe = data['candidates'][0]['content']['parts'][0]['text'].strip()
-        if settings.ENABLE_DEBUG_LOGS:
-            print(f"✨ Vibe Result: {vibe}")
+        logger.debug("Vibe Result: %s", vibe)
         return {"vibe": vibe}
     except Exception as e:
-        print(f"❌ Vibe Error: {e}")
+        logger.error("Vibe Error: %s", e)
         return {"vibe": "Eclectic and mysterious."}
 
 @app.post("/save_track")
-def save_track_to_spotify(request: SaveWebTrackRequest):
-    """Save track to Spotify library or playlist"""
-    if settings.ENABLE_DEBUG_LOGS:
-        print(f"💾 Saving Track: {request.track_id} to Playlist: {request.playlist_id}")
+def save_track_to_spotify(request: SaveWebTrackRequest) -> dict:
+    """Save track to Spotify library or playlist."""
+    logger.debug("Saving Track: %s to Playlist: %s", request.track_id, request.playlist_id)
     
     try:
         # 1. Initialize User Context
@@ -407,13 +399,13 @@ def save_track_to_spotify(request: SaveWebTrackRequest):
 
         # 2. Detect Genre (Always run this now for Analytics)
         genre = detect_genre_with_gemini(track_name, artist_name)
-        print(f"🤖 Genre: {genre}")
+        logger.info("Genre: %s", genre)
         
         playlist_name = "Stash: " + genre
 
         # 3. Smart Sort Logic (Playlist overriding)
         if request.playlist_id == "smart_sort":
-            print("🧠 Smart Sort Engaged.")
+            logger.info("Smart Sort Engaged.")
             
             # Find/Create Playlist
             playlists = user_sp.current_user_playlists(limit=50)
@@ -425,11 +417,11 @@ def save_track_to_spotify(request: SaveWebTrackRequest):
             
             if existing_id:
                 target_playlist_id = existing_id
-                print(f"📂 Found existing playlist: {playlist_name}")
+                logger.info("Found existing playlist: %s", playlist_name)
             else:
                 new_playlist = user_sp.user_playlist_create(user_id, playlist_name, public=False)
                 target_playlist_id = new_playlist['id']
-                print(f"✨ Created new playlist: {playlist_name}")
+                logger.info("Created new playlist: %s", playlist_name)
 
         # 4. Add Track to Target Playlist
         final_playlist_name = "Liked Songs"
@@ -445,13 +437,13 @@ def save_track_to_spotify(request: SaveWebTrackRequest):
                  try:
                      pl_details = user_sp.playlist(target_playlist_id)
                      final_playlist_name = pl_details['name']
-                 except:
+                 except Exception:
                      final_playlist_name = "Selected Playlist"
                      
-             print(f"✅ Added to playlist: {final_playlist_name} ({target_playlist_id})")
+             logger.info("Added to playlist: %s (%s)", final_playlist_name, target_playlist_id)
         else:
              user_sp.current_user_saved_tracks_add([request.track_id])
-             print("✅ Added to Liked Songs")
+             logger.info("Added to Liked Songs")
 
         return {
             "success": True, 
@@ -461,14 +453,13 @@ def save_track_to_spotify(request: SaveWebTrackRequest):
         }
 
     except Exception as e:
-        print(f"❌ Save Error: {e}")
+        logger.error("Save Error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/remove_track")
-def remove_track_from_spotify(request: RemoveTrackRequest):
-    """Remove track from Spotify library and/or playlist"""
-    if settings.ENABLE_DEBUG_LOGS:
-        print(f"🗑️ Removing Track: {request.track_id} from Playlist: {request.playlist_id}")
+def remove_track_from_spotify(request: RemoveTrackRequest) -> dict:
+    """Remove track from Spotify library and/or playlist."""
+    logger.debug("Removing Track: %s from Playlist: %s", request.track_id, request.playlist_id)
     
     try:
         # Initialize User Context
@@ -477,12 +468,10 @@ def remove_track_from_spotify(request: RemoveTrackRequest):
         # Always remove from Liked Songs
         try:
             user_sp.current_user_saved_tracks_delete([request.track_id])
-            if settings.ENABLE_DEBUG_LOGS:
-                print("✅ Removed from Liked Songs")
+            logger.debug("Removed from Liked Songs")
         except Exception as e:
             # Song might not be in liked songs, that's okay
-            if settings.ENABLE_DEBUG_LOGS:
-                print(f"⚠️ Not in Liked Songs: {e}")
+            logger.debug("Not in Liked Songs: %s", e)
         
         # If playlist_id provided and not "1" (Liked Songs), also remove from that playlist
         if request.playlist_id and request.playlist_id != '1' and request.playlist_id != 'smart_sort':
@@ -491,14 +480,12 @@ def remove_track_from_spotify(request: RemoveTrackRequest):
                     request.playlist_id, 
                     [f"spotify:track:{request.track_id}"]
                 )
-                if settings.ENABLE_DEBUG_LOGS:
-                    print(f"✅ Removed from playlist: {request.playlist_id}")
+                logger.debug("Removed from playlist: %s", request.playlist_id)
             except Exception as e:
-                if settings.ENABLE_DEBUG_LOGS:
-                    print(f"⚠️ Playlist removal failed: {e}")
+                logger.debug("Playlist removal failed: %s", e)
         
         return {"success": True}
     
     except Exception as e:
-        print(f"❌ Remove Error: {e}")
+        logger.error("Remove Error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
