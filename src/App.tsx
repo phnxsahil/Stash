@@ -40,29 +40,43 @@ interface AppState {
   hasSpotifyToken: boolean;
 }
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function createDefaultState(theme?: 'light' | 'dark'): AppState {
+  return {
+    isLoggedIn: false,
+    userName: '',
+    userEmail: '',
+    history: [],
+    currentMatches: [],
+    currentUrl: '',
+    showModal: false,
+    currentView: 'landing',
+    isLoadingHistory: false,
+    hasSpotifyToken: false,
+    autoAddTopMatch: true,
+    defaultPlaylistId: '1',
+    playlists: [],
+    theme: theme || 'dark',
+    isProcessing: false,
+    processingStage: 1,
+    processingError: undefined,
+  };
+}
+
+/** Extract the source platform from a URL */
+function extractSource(url: string): string {
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
+  if (url.includes('tiktok.com')) return 'TikTok';
+  if (url.includes('instagram.com')) return 'Instagram';
+  if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
+  return 'Web';
+}
+
 export default function App() {
   const [state, setState] = useState<AppState>(() => {
-    // Load theme from localStorage on initial load
     const savedTheme = localStorage.getItem('stash-theme') as 'light' | 'dark' | null;
-    return {
-      isLoggedIn: false,
-      userName: '',
-      userEmail: '',
-      history: [],
-      currentMatches: [],
-      currentUrl: '',
-      showModal: false,
-      currentView: 'landing',
-      isLoadingHistory: false,
-      hasSpotifyToken: false,
-      autoAddTopMatch: true, // Default to true as requested
-      defaultPlaylistId: '1',
-      playlists: [],
-      theme: savedTheme || 'dark',
-      isProcessing: false,
-      processingStage: 1,
-      processingError: undefined,
-    };
+    return createDefaultState(savedTheme || undefined);
   });
 
   // Force mood board refresh when songs change
@@ -205,25 +219,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await api.logoutUser();
-      setState({
-        isLoggedIn: false,
-        userName: '',
-        userEmail: '',
-        history: [],
-        currentMatches: [],
-        currentUrl: '',
-        showModal: false,
-        currentView: 'landing',
-        isLoadingHistory: false,
-        hasSpotifyToken: false,
-        autoAddTopMatch: true,
-        defaultPlaylistId: '1',
-        playlists: [],
-        theme: state.theme,
-        isProcessing: false,
-        processingStage: 1,
-        processingError: undefined,
-      });
+      setState(createDefaultState(state.theme));
       toast.success('Logged out successfully');
     } catch (error) {
       logger.error('Failed to logout:', error);
@@ -385,14 +381,6 @@ export default function App() {
     } else {
       setState((prev) => ({ ...prev, currentView: 'landing' }));
     }
-  };
-
-  const extractSource = (url: string): string => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
-    if (url.includes('tiktok.com')) return 'TikTok';
-    if (url.includes('instagram.com')) return 'Instagram';
-    if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
-    return 'Web';
   };
 
   const renderView = () => {
