@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
 import { SettingsView } from './components/SettingsView';
@@ -175,6 +175,14 @@ export default function App() {
 
   const streak = useMemo(() => calculateStreak(state.history), [state.history]);
 
+  const songsThisWeek = useMemo(() => {
+    const now = Date.now();
+    return state.history.filter(s => {
+      const date = new Date(s.created_at || '');
+      return now - date.getTime() < SEVEN_DAYS_MS;
+    }).length;
+  }, [state.history]);
+
   // Load history when user logs in
   useEffect(() => {
     if (state.isLoggedIn && state.history.length === 0) {
@@ -207,16 +215,16 @@ export default function App() {
     }
   };
 
-  const handleConnectSpotify = async () => {
+  const handleConnectSpotify = useCallback(async () => {
     try {
       await api.connectSpotify();
     } catch (error) {
       logger.error('Failed to connect:', error);
       toast.error('Failed to connect to Spotify');
     }
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
       setState(createDefaultState(state.theme));
@@ -225,7 +233,7 @@ export default function App() {
       logger.error('Failed to logout:', error);
       toast.error('Failed to logout');
     }
-  };
+  }, [state.theme]);
 
   const handleStashSubmit = async (url: string) => {
     try {
@@ -365,9 +373,9 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (view: ViewType) => {
+  const handleNavigate = useCallback((view: ViewType) => {
     setState((prev) => ({ ...prev, currentView: view }));
-  };
+  }, []);
 
   // Expose for settings navigation
   useEffect(() => {
@@ -375,13 +383,15 @@ export default function App() {
     return () => { delete (window as any).onNavigate; };
   }, []);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (state.isLoggedIn) {
       setState((prev) => ({ ...prev, currentView: 'app' }));
     } else {
       setState((prev) => ({ ...prev, currentView: 'landing' }));
     }
-  };
+  }, [state.isLoggedIn]);
+
+  const extractSourceFromUrl = useCallback(extractSource, []);
 
   const renderView = () => {
     switch (state.currentView) {
@@ -399,12 +409,7 @@ export default function App() {
             theme={state.theme}
             history={state.history}
             userName={state.userName}
-            songsThisWeek={state.history.filter(s => {
-              const date = new Date(s.created_at || '');
-              const now = new Date();
-              const diff = now.getTime() - date.getTime();
-              return diff < 7 * 24 * 60 * 60 * 1000;
-            }).length}
+            songsThisWeek={songsThisWeek}
             streak={streak}
           />
         );
@@ -432,12 +437,7 @@ export default function App() {
           <AppView
             userName={state.userName}
             history={state.history}
-            songsThisWeek={state.history.filter(s => {
-              const date = new Date(s.created_at || '');
-              const now = new Date();
-              const diff = now.getTime() - date.getTime();
-              return diff < 7 * 24 * 60 * 60 * 1000;
-            }).length}
+            songsThisWeek={songsThisWeek}
             streak={streak}
             autoAddTopMatch={state.autoAddTopMatch}
             theme={state.theme}
