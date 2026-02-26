@@ -1,31 +1,8 @@
 import { supabase } from './supabase';
+import type { Song, SongMatch, Playlist, UserPreferences } from '../types';
 
-export interface Song {
-  id: string;
-  song: string;
-  artist: string;
-  source: string;
-  album_art_url: string;
-  preview_url?: string;
-  spotify_url?: string;
-  genre?: string;
-  created_at?: string;
-}
-
-export interface SongMatch {
-  id: string;
-  song: string;
-  artist: string;
-  album_art_url: string;
-  preview_url?: string;
-  spotify_url?: string;
-  confidence?: number;
-}
-
-export interface Playlist {
-  id: string;
-  name: string;
-}
+// Re-export types so existing imports from './lib/api' still work
+export type { Song, SongMatch, Playlist } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : window.location.origin);
 console.log('🔗 API Config:', {
