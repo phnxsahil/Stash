@@ -315,12 +315,7 @@ export const api = {
     }
   },
 
-  async updateUserPreferences(prefs: {
-    autoAddTopMatch?: boolean;
-    defaultPlaylistId?: string;
-    theme?: 'light' | 'dark';
-    smartStashEnabled?: boolean;
-  }): Promise<void> {
+  async updateUserPreferences(prefs: UserPreferences): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
