@@ -17,7 +17,6 @@ from shazamio import Shazam
 from collections import defaultdict
 import random
 import asyncio
-import requests
 
 # Helper to get Spotify client (Handles missing credentials gracefully)
 def get_spotify_client():
