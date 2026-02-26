@@ -37,14 +37,22 @@ export type Theme = 'light' | 'dark';
 
 export interface AppState {
     isLoggedIn: boolean;
+    userName: string;
+    userEmail: string;
     history: Song[];
     currentMatches: SongMatch[];
-    userPreferences: {
-        autoAddTopMatch: boolean;
-        defaultPlaylistId?: string;
-        theme?: 'light' | 'dark';
-        smartStashEnabled?: boolean;
-    };
+    currentUrl: string;
+    showModal: boolean;
+    currentView: ViewType;
+    isLoadingHistory: boolean;
+    autoAddTopMatch: boolean;
+    defaultPlaylistId: string;
+    playlists: Playlist[];
+    theme: Theme;
+    isProcessing: boolean;
+    processingStage: 1 | 2 | 3 | 'success' | 'error';
+    processingError?: string;
+    hasSpotifyToken: boolean;
 }
 
 export interface Toast {
@@ -52,5 +60,3 @@ export interface Toast {
     message: string;
     type: 'success' | 'error';
 }
-
-export type View = 'app' | 'stats' | 'settings' | 'landing';
