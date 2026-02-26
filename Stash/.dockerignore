@@ -1,0 +1,19 @@
+node_modules
+src
+public
+dist
+.git
+*.m4a
+*.mp3
+*.log
+src_backup_v1.3
+playwright-report
+test-results
+build
+.cache
+original_app.tsx
+ffcache*
+repro_*
+temp_*
+# Allow requirements.backend.txt but ignore other txt files
+requirements.txt

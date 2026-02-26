@@ -1,0 +1,2 @@
+# Only ignore the Python backend API directory
+api/

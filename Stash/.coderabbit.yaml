@@ -1,0 +1,16 @@
+# CodeRabbit Configuration
+# For more info, visit https://docs.coderabbit.ai/
+
+language: "en-US"
+reviews:
+  profile: "chill"
+  request_reviews_from_completions: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "master"
+      - "develop"
+chat:
+  enabled: true

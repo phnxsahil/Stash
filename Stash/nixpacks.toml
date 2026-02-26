@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["python311Full", "ffmpeg"]
+
+[phases.install]
+cmds = ["python3 -m pip install -r requirements.backend.txt"]
+
+[phases.build]
+cmds = ["echo 'Skipping frontend build on backend'"]
+
+[start]
+cmd = "python3 main.py"

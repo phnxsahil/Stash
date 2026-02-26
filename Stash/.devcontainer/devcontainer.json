@@ -1,0 +1,77 @@
+{
+    "name": "Stash Development Environment",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.11"
+        },
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "installOhMyZsh": true,
+            "upgradePackages": true
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "bradlc.vscode-tailwindcss",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.black-formatter",
+                "eamodio.gitlens",
+                "usernamehw.errorlens",
+                "christian-kohler.path-intellisense",
+                "formulahendry.auto-rename-tag",
+                "dsznajder.es7-react-js-snippets",
+                "ms-playwright.playwright"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "editor.defaultFormatter": "esbenp.prettier-vscode",
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": "explicit"
+                },
+                "typescript.tsdk": "node_modules/typescript/lib",
+                "tailwindCSS.experimental.classRegex": [
+                    [
+                        "cva\\(([^)]*)\\)",
+                        "[\"'`]([^\"'`]*).*?[\"'`]"
+                    ],
+                    [
+                        "cn\\(([^)]*)\\)",
+                        "(?:'|\"|`)([^']*)(?:'|\"|`)"
+                    ]
+                ],
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.formatting.provider": "black",
+                "[python]": {
+                    "editor.defaultFormatter": "ms-python.black-formatter"
+                }
+            }
+        }
+    },
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "forwardPorts": [
+        5173,
+        8000
+    ],
+    "portsAttributes": {
+        "5173": {
+            "label": "Vite Dev Server",
+            "onAutoForward": "notify"
+        },
+        "8000": {
+            "label": "FastAPI Backend",
+            "onAutoForward": "notify"
+        }
+    },
+    "remoteEnv": {
+        "NODE_ENV": "development"
+    },
+    "postAttachCommand": "echo '🚀 Stash Dev Environment Ready! Run: npm run dev (frontend) or python main.py (backend)'",
+    "mounts": [
+        "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,readonly,type=bind,consistency=cached"
+    ]
+}
