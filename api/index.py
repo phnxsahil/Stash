@@ -2,21 +2,30 @@ import os
 import time
 import json
 import glob
+import logging
+import random
+import asyncio
+from typing import Optional
+from collections import defaultdict
+
 import requests
+import spotipy
+import yt_dlp
+import shutil
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-import yt_dlp
-import shutil
-
-# Import centralized configuration
-from api.config import settings
 from shazamio import Shazam
-from collections import defaultdict
-import random
-import asyncio
+
+from api.config import settings
+
+# Configure module logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG if settings.ENABLE_DEBUG_LOGS else logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 # Helper to get Spotify client (Handles missing credentials gracefully)
 def get_spotify_client():
