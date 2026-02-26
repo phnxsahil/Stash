@@ -20,6 +20,11 @@ export interface SongMatch {
     confidence?: number;
 }
 
+export interface Playlist {
+    id: string;
+    name: string;
+}
+
 export interface AppState {
     isLoggedIn: boolean;
     history: Song[];
