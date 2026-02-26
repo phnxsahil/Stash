@@ -1,6 +1,6 @@
 """
-Centralized configuration management for Stash API
-Validates environment variables and provides type-safe settings
+Centralized configuration management for Stash API.
+Validates environment variables and provides type-safe settings.
 """
 
 import logging
@@ -106,9 +106,9 @@ class Settings:
             "SPOTIFY_CLIENT_ID": self.SPOTIFY_CLIENT_ID,
             "SPOTIFY_CLIENT_SECRET": self.SPOTIFY_CLIENT_SECRET,
         }
-        
+
         missing = [key for key, value in required_vars.items() if not value]
-        
+
         if missing:
             logger.warning("Missing required environment variables: %s", ", ".join(missing))
             logger.warning("Some features (Recognition, Spotify Save) will be disabled.")

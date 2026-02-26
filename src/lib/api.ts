@@ -6,7 +6,7 @@ import type { Song, SongMatch, Playlist, UserPreferences } from '../types';
 export type { Song, SongMatch, Playlist } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : window.location.origin);
-logger.log('🔗 API Config:', {
+logger.log('API Config:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
   MODE: import.meta.env.MODE,
   BASE_URL: API_BASE_URL
@@ -61,7 +61,7 @@ export const api = {
     }
 
     try {
-      logger.log(`🌐 Fetching: ${API_BASE_URL}/recognize`);
+      logger.log(`Fetching: ${API_BASE_URL}/recognize`);
       const response = await fetch(`${API_BASE_URL}/recognize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,12 +99,12 @@ export const api = {
   async getSpotifyToken(): Promise<string | null> {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
-      logger.error('❌ Supabase: Session fetch error:', error);
+      logger.error('Supabase: Session fetch error:', error);
       return null;
     }
     const token = session?.provider_token || null;
     if (!token && session) {
-      logger.warn('⚠️ Supabase: Session exists but provider_token is MISSING (expired or refresh failed)');
+      logger.warn('Supabase: Session exists but provider_token is MISSING (expired or refresh failed)');
     }
     return token;
   },
@@ -123,10 +123,10 @@ export const api = {
       });
 
       if (response.ok) {
-        logger.log(`✅ Spotify: Successfully added track ${trackId} to Liked Songs`);
+        logger.log(`Spotify: Successfully added track ${trackId} to Liked Songs`);
       } else {
         const errData = await response.json().catch(() => ({}));
-        logger.error(`❌ Spotify: Failed to add track to Library (${response.status}):`, errData);
+        logger.error(`Spotify: Failed to add track to Library (${response.status}):`, errData);
       }
       return response.ok;
     } catch (err) {
@@ -152,10 +152,10 @@ export const api = {
       });
 
       if (response.ok) {
-        logger.log(`✅ Spotify: Successfully added track ${trackId} to Playlist ${playlistId}`);
+        logger.log(`Spotify: Successfully added track ${trackId} to Playlist ${playlistId}`);
       } else {
         const errData = await response.json().catch(() => ({}));
-        logger.error(`❌ Spotify: Failed to add track to Playlist (${response.status}):`, errData);
+        logger.error(`Spotify: Failed to add track to Playlist (${response.status}):`, errData);
       }
       return response.ok;
     } catch (err) {
@@ -188,9 +188,9 @@ export const api = {
           savedPlaylistName = data.playlist_name;
         }
         genre = data.genre || 'Unknown'; // Extract genre from backend response
-        logger.log("✅ Backend Save Success:", data);
+        logger.log("Backend Save Success:", data);
       } catch (err) {
-        logger.error("❌ Backend Save Error:", err);
+        logger.error("Backend Save Error:", err);
       }
     }
 
@@ -211,7 +211,7 @@ export const api = {
         genre: genre,
       };
 
-      logger.log("🔄 Supabase: Saving track with full payload...", { song: song.song, user_id: user.id });
+      logger.log("Supabase: Saving track with full payload...", { song: song.song, user_id: user.id });
 
       const { data, error } = await supabase
         .from('history')
@@ -220,14 +220,14 @@ export const api = {
         .single();
 
       if (error) {
-        logger.error("❌ Supabase: Save failed:", error);
+        logger.error("Supabase: Save failed:", error);
         throw new Error(`Database save failed: ${error.message}`);
       }
 
-      logger.log("✅ Supabase: Save successful!");
+      logger.log("Supabase: Save successful!");
       savedSong = data as Song;
     } catch (dbError) {
-      logger.error("❌ CRITICAL DATABASE ERROR:", dbError);
+      logger.error("CRITICAL DATABASE ERROR:", dbError);
       throw dbError;
     }
 
@@ -238,11 +238,11 @@ export const api = {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        logger.warn("⚠️ History: No authenticated user found, returning empty history.");
+        logger.warn("History: No authenticated user found, returning empty history.");
         return [];
       }
 
-      logger.log("🔄 Supabase: Fetching user history...", { user_id: user.id });
+      logger.log("Supabase: Fetching user history...", { user_id: user.id });
 
       // Try primary query with user_id filter
       const { data, error } = await supabase
@@ -253,8 +253,8 @@ export const api = {
 
       if (error) {
         // Zero-Failure Strategy: Fallback to global fetch on ANY error
-        logger.warn(`⚠️ Supabase: Fetching by user_id failed (${error.code}). Attempting global fetch fallback...`);
-        logger.log("DEBUG: Original error was:", error);
+        logger.warn(`Supabase: Fetching by user_id failed (${error.code}). Attempting global fetch fallback...`);
+        logger.debug("Original error was:", error);
 
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('history')
@@ -262,17 +262,17 @@ export const api = {
           .order('created_at', { ascending: false });
 
         if (fallbackError) {
-          logger.error("❌ Supabase: Global fallback fetch failed:", fallbackError);
+          logger.error("Supabase: Global fallback fetch failed:", fallbackError);
           throw fallbackError;
         }
-        logger.log(`✅ Supabase: Loaded ${fallbackData?.length || 0} items via global fallback.`);
+        logger.log(`Supabase: Loaded ${fallbackData?.length || 0} items via global fallback.`);
         return fallbackData || [];
       }
 
-      logger.log(`✅ Supabase: Loaded ${data?.length || 0} items for user.`);
+      logger.log(`Supabase: Loaded ${data?.length || 0} items for user.`);
       return data || [];
     } catch (err) {
-      logger.error("❌ API: getUserHistory critical failure:", err);
+      logger.error("API: getUserHistory critical failure:", err);
       return [];
     }
   },
@@ -289,7 +289,7 @@ export const api = {
   async removeFromSpotify(trackId: string, playlistId?: string): Promise<void> {
     const token = await this.getSpotifyToken();
     if (!token) {
-      logger.warn('⚠️ No Spotify token, skipping Spotify deletion');
+      logger.warn('No Spotify token, skipping Spotify deletion');
       return;
     }
 
@@ -308,9 +308,9 @@ export const api = {
         throw new Error(`Failed to remove from Spotify: ${response.status}`);
       }
 
-      logger.log('✅ Successfully removed from Spotify');
+      logger.log('Successfully removed from Spotify');
     } catch (error) {
-      logger.error('❌ Error removing from Spotify:', error);
+      logger.error('Error removing from Spotify:', error);
       // Don't throw - we still want to delete from history even if Spotify fails
     }
   },

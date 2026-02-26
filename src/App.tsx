@@ -269,8 +269,7 @@ export default function App() {
   const handleSongSelection = async (song: SongMatch) => {
     try {
       setState((prev) => ({ ...prev, showModal: false }));
-      const source = extractSource(state.currentUrl);
-      const { song: newSong } = await api.addTrack(song, source);
+      const source = extractSource(state.currentUrl);      const { song: newSong } = await api.addTrack(song, source);
 
       setState((prev) => ({
         ...prev,
@@ -407,21 +406,21 @@ export default function App() {
         return (
           <Suspense fallback={viewFallback}>
             <SettingsView
-              userName={state.userName}
-              userEmail={state.userEmail}
-              autoAddTopMatch={state.autoAddTopMatch}
-              defaultPlaylistId={state.defaultPlaylistId}
-              playlists={state.playlists}
-              theme={state.theme}
-              hasSpotifyToken={state.hasSpotifyToken}
-              onReconnectSpotify={handleConnectSpotify}
-              onBack={handleBack}
-              onLogout={handleLogout}
-              onToggleAutoAdd={handleToggleAutoAdd}
-              onPlaylistChange={handlePlaylistChange}
-              onToggleTheme={handleToggleTheme}
-              onOpenStats={() => handleNavigate('stats')}
-            />
+            userName={state.userName}
+            userEmail={state.userEmail}
+            autoAddTopMatch={state.autoAddTopMatch}
+            defaultPlaylistId={state.defaultPlaylistId}
+            playlists={state.playlists}
+            theme={state.theme}
+            hasSpotifyToken={state.hasSpotifyToken}
+            onReconnectSpotify={handleConnectSpotify}
+            onBack={handleBack}
+            onLogout={handleLogout}
+            onToggleAutoAdd={handleToggleAutoAdd}
+            onPlaylistChange={handlePlaylistChange}
+            onToggleTheme={handleToggleTheme}
+            onOpenStats={() => handleNavigate('stats')}
+          />
           </Suspense>
         );
       case 'app':

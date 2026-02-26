@@ -86,7 +86,7 @@ class ReelRequest(BaseModel):
 @app.get("/")
 @app.head("/")
 def health_check():
-    return {"status": "Antigravity Engine Online ≡ƒƒó"}
+    return {"status": "Antigravity Engine Online 🟢"}
 
 
 # Rate limiting storage (in-memory for now)

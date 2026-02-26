@@ -33,6 +33,7 @@ export interface UserPreferences {
 }
 
 export type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
+
 export type Theme = 'light' | 'dark';
 
 export interface AppState {
