@@ -25,6 +25,16 @@ export interface Playlist {
     name: string;
 }
 
+export interface UserPreferences {
+    autoAddTopMatch?: boolean;
+    defaultPlaylistId?: string;
+    theme?: 'light' | 'dark';
+    smartStashEnabled?: boolean;
+}
+
+export type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
+export type Theme = 'light' | 'dark';
+
 export interface AppState {
     isLoggedIn: boolean;
     history: Song[];
