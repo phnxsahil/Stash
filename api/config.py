@@ -3,11 +3,15 @@ Centralized configuration management for Stash API
 Validates environment variables and provides type-safe settings
 """
 
+import logging
 import os
 from typing import List
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class Settings:
@@ -76,9 +80,11 @@ class Settings:
             self.YTDLP_COOKIES_YOUTUBE.append(cookie_value)
             youtube_num += 1
         
-        if self.ENABLE_DEBUG_LOGS:
-            print(f"🍪 Loaded {len(self.YTDLP_COOKIES_INSTAGRAM)} Instagram cookie account(s)")
-            print(f"🍪 Loaded {len(self.YTDLP_COOKIES_YOUTUBE)} YouTube cookie account(s)")
+        logger.debug(
+            "Loaded %d Instagram cookie account(s), %d YouTube cookie account(s)",
+            len(self.YTDLP_COOKIES_INSTAGRAM),
+            len(self.YTDLP_COOKIES_YOUTUBE),
+        )
 
     
     def validate(self) -> bool:
@@ -92,15 +98,14 @@ class Settings:
         missing = [key for key, value in required_vars.items() if not value]
         
         if missing:
-            print(f"⚠️ Warning: Missing required environment variables: {', '.join(missing)}")
-            print("⚠️ Some features (Recognition, Spotify Save) will be disabled.")
+            logger.warning("Missing required environment variables: %s", ", ".join(missing))
+            logger.warning("Some features (Recognition, Spotify Save) will be disabled.")
             return False
-        
-        if self.ENABLE_DEBUG_LOGS:
-            print("✅ All required environment variables are set")
-            print(f"🌍 Environment: {self.ENVIRONMENT}")
-            print(f"🔒 CORS Origins: {', '.join(self.ALLOWED_ORIGINS)}")
-            print(f"⏱️  Rate Limit: {self.RATE_LIMIT_PER_DAY} requests/day")
+
+        logger.debug("All required environment variables are set")
+        logger.debug("Environment: %s", self.ENVIRONMENT)
+        logger.debug("CORS Origins: %s", ", ".join(self.ALLOWED_ORIGINS))
+        logger.debug("Rate Limit: %d requests/day", self.RATE_LIMIT_PER_DAY)
         return True
 
 
