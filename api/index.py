@@ -4,6 +4,7 @@ import json
 import glob
 import logging
 import random
+from uuid import uuid4
 import asyncio
 from functools import lru_cache
 from typing import Optional
@@ -127,7 +128,8 @@ async def recognize_reel(req: ReelRequest, request: Request):
         logger.warning("Gemini API Key missing. Genre detection will be disabled.")
 
     # 1. DOWNLOAD AUDIO
-    audio_filename = download_audio(req.url)
+    loop = asyncio.get_running_loop()
+    audio_filename = await loop.run_in_executor(None, download_audio, req.url)
     if not audio_filename:
         # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
         raise HTTPException(status_code=422, detail="Could not download audio. Instagram/TikTok might be blocking the request. Try a different link.")
@@ -207,7 +209,7 @@ def download_audio(url: str) -> Optional[str]:
 def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]:
     """Internal function to download with or without cookies."""
     try:
-        filename = f"/tmp/temp_{int(time.time())}"
+        filename = f"/tmp/temp_{uuid4().hex}"
         has_ffmpeg = shutil.which("ffmpeg") is not None
         
         # Detect platform from URL
