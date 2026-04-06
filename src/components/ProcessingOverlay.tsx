@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music2, Download, Fingerprint, Search, CheckCircle2, XCircle, X } from 'lucide-react';
+import { Music2, Download, Fingerprint, Search, CheckCircle2, XCircle, X, Radio } from 'lucide-react';
 import { RetryButton } from './RetryButton';
 import { Button } from './ui/button';
 
@@ -12,30 +12,24 @@ interface ProcessingOverlayProps {
   onRetry?: () => void;
 }
 
-const STAGE_DURATIONS = {
-  extracting: 1200, // 1.2s
-  identifying: 1500, // 1.5s
-  syncing: 1800, // 1.8s
-};
-
 const stages = [
   {
     id: 1,
     icon: Download,
     title: 'Extracting Audio',
-    description: 'Analyzing the source...',
+    description: 'Analyzing the source signal...',
   },
   {
     id: 2,
     icon: Fingerprint,
     title: 'Identifying Song',
-    description: 'Matching audio fingerprint...',
+    description: 'Matching digital fingerprint...',
   },
   {
     id: 3,
     icon: Search,
     title: 'Syncing Spotify',
-    description: 'Finding perfect match...',
+    description: 'Finding the high-fidelity match...',
   },
 ];
 
@@ -58,7 +52,7 @@ export function ProcessingOverlay({
     }
 
     const targetProgress = isSuccess ? 100 : isError ? 0 : (stage as number) * 33.33;
-    const increment = targetProgress > progress ? 2 : -2;
+    const increment = targetProgress > progress ? 1.5 : -1.5;
 
     const timer = setInterval(() => {
       setProgress(prev => {
@@ -68,17 +62,16 @@ export function ProcessingOverlay({
         }
         return next;
       });
-    }, 20);
+    }, 16);
 
     return () => clearInterval(timer);
   }, [isVisible, stage, isError, isSuccess, progress]);
 
-  // Auto-close after success ONLY
   useEffect(() => {
     if (isSuccess && onClose) {
       const timer = setTimeout(() => {
         onClose();
-      }, 2000);
+      }, 2200);
       return () => clearTimeout(timer);
     }
   }, [isSuccess, onClose]);
@@ -90,195 +83,156 @@ export function ProcessingOverlay({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/84 backdrop-blur-2xl"
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
             className="relative w-full max-w-md"
           >
-            {/* Close Button (Visible on Error) */}
             {isError && onClose && (
-               <div className="absolute -top-12 right-0 z-50">
+               <div className="absolute -top-14 right-0 z-50">
                 <Button
                   onClick={onClose}
                   variant="ghost"
                   size="icon"
-                  className="rounded-full bg-white/10 hover:bg-white/20 text-white"
+                  className="rounded-full bg-card/50 border border-border/40 hover:bg-card/80 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </Button>
                </div>
             )}
 
-            {/* Glass Card */}
             <div className={`
-              relative rounded-3xl p-12 
-              ${isError
-                ? 'bg-red-500/10 border-red-500/30'
-                : 'bg-white/5 border-white/10'
-              }
-              border backdrop-blur-xl shadow-2xl
+              relative rounded-[2rem] p-6 md:p-12 overflow-hidden border-border/40 shadow-2xl
+              ${isError ? 'bg-destructive/5 border-destructive/20' : 'bg-card/58 border'}
+              backdrop-blur-3xl
             `}>
-              {/* Animated Background Rings */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                {[...Array(3)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className={`absolute rounded-full ${isError ? 'border-red-500/20' : 'border-[#1DB954]/20'
-                      } border-2`}
-                    initial={{ width: 80, height: 80, opacity: 0.5 }}
-                    animate={{
-                      width: [80, 200, 80],
-                      height: [80, 200, 80],
-                      opacity: [0.5, 0, 0.5],
-                    }}
-                    transition={{
-                      duration: 2,
-                      delay: i * 0.4,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                ))}
-              </div>
+              {/* Decorative Glows */}
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full" />
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full" />
 
-              {/* Center Icon */}
-              <div className="relative flex flex-col items-center gap-6 mb-8">
+              <div className="relative flex flex-col items-center gap-6 md:gap-8">
+                {!isError && (
+                  <div className="beta-chip">
+                    <Radio className="h-3.5 w-3.5" />
+                    Share-ready mobile flow
+                  </div>
+                )}
                 <motion.div
                   animate={{
-                    rotate: isError ? 0 : 360,
-                    scale: [1, 1.1, 1],
+                    rotate: isError ? 0 : [0, 360],
+                    scale: [1, 1.05, 1],
                   }}
                   transition={{
-                    rotate: { duration: 3, repeat: Infinity, ease: 'linear' },
-                    scale: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
+                    rotate: { duration: 8, repeat: Infinity, ease: 'linear' },
+                    scale: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
                   }}
                   className={`
-                    relative w-20 h-20 rounded-2xl flex items-center justify-center
+                    relative w-20 h-20 md:w-24 md:h-24 rounded-3xl flex items-center justify-center
                     ${isError
-                      ? 'bg-red-500/20 border-red-500/50'
+                      ? 'bg-destructive/10 border-destructive/30 text-destructive'
                       : isSuccess
-                        ? 'bg-emerald-500/20 border-emerald-500/50'
-                        : 'bg-[#1DB954]/20 border-[#1DB954]/50'
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'bg-primary/5 border-primary/20 text-primary'
                     }
-                    border-2 shadow-xl
+                    border-2 shadow-2xl transition-colors duration-500
                   `}
                 >
                   {isError ? (
-                    <XCircle className="w-10 h-10 text-red-500" />
+                    <XCircle className="w-10 h-10 md:w-12 md:h-12" />
                   ) : isSuccess ? (
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                    <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12" />
                   ) : (
-                    <Music2 className="w-10 h-10 text-[#1DB954]" />
+                    <Music2 className="w-10 h-10 md:w-12 md:h-12" />
+                  )}
+                  
+                  {/* Pulse Ring */}
+                  {!isError && !isSuccess && (
+                    <motion.div
+                      className="absolute inset-0 rounded-3xl border-2 border-primary/30"
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
                   )}
                 </motion.div>
 
-                {/* Status Text Status Text */}
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-white mb-2">
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-semibold tracking-tight md:text-2xl">
                     {isError
-                      ? 'Something Went Wrong'
+                      ? 'Sync Interrupted'
                       : isSuccess
-                        ? 'Success!'
+                        ? 'Stashed Successfully'
                         : stages[currentStageIndex]?.title
                     }
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="px-1 text-sm leading-relaxed text-muted-foreground md:px-4">
                     {isError
-                      ? errorMessage || 'Please try again'
+                      ? errorMessage || 'We encountered an issue matching the signal. Please verify the link and try again.'
                       : isSuccess
-                        ? 'Song added to your library'
+                        ? 'The track has been added to your Spotify library.'
                         : stages[currentStageIndex]?.description
                     }
                   </p>
                 </div>
 
-                {/* Retry Button */}
                 {isError && onRetry && (
-                  <div className="mt-2">
+                  <div className="pt-2">
                     <RetryButton onRetry={onRetry} />
                   </div>
                 )}
-              </div>
 
-              {/* Stage Indicators */}
-              {!isError && !isSuccess && (
-                <div className="flex items-center justify-center gap-3 mb-8">
-                  {stages.map((stageItem, index) => {
-                    const StageIcon = stageItem.icon;
-                    const isActive = index === currentStageIndex;
-                    const isCompleted = index < currentStageIndex;
+                {!isError && !isSuccess && (
+                  <div className="flex items-center gap-3 py-2">
+                    {stages.map((stageItem, index) => {
+                      const isActive = index === currentStageIndex;
+                      const isCompleted = index < currentStageIndex;
 
-                    return (
-                      <motion.div
-                        key={stageItem.id}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{
-                          scale: isActive ? 1.2 : 1,
-                          opacity: isCompleted ? 0.5 : isActive ? 1 : 0.3
-                        }}
-                        className="flex flex-col items-center gap-2"
-                      >
-                        <div className={`
-                          w-12 h-12 rounded-xl flex items-center justify-center transition-all
-                          ${isCompleted
-                            ? 'bg-emerald-500/20 border-emerald-500/50'
-                            : isActive
-                              ? 'bg-[#1DB954]/20 border-[#1DB954]/50'
-                              : 'bg-white/5 border-white/10'
-                          }
-                          border-2
-                        `}>
-                          <StageIcon className={`
-                            w-6 h-6
+                      return (
+                        <div
+                          key={stageItem.id}
+                          className={`
+                            w-3 h-3 rounded-full border-2 transition-all duration-500
                             ${isCompleted
-                              ? 'text-emerald-500'
+                              ? 'bg-primary border-primary'
                               : isActive
-                                ? 'text-[#1DB954]'
-                                : 'text-gray-500'
+                                ? 'bg-primary border-primary scale-125 shadow-[0_0_12px_rgba(29,185,84,0.5)]'
+                                : 'bg-transparent border-border/60'
                             }
-                          `} />
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                          `}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="w-full space-y-4">
+                  <div className="relative w-full h-2.5 bg-muted/50 rounded-full overflow-hidden border border-border/20 shadow-inner">
+                    <motion.div
+                      className={`h-full rounded-full relative ${isError
+                        ? 'bg-destructive'
+                        : 'bg-primary'
+                        }`}
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    >
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                        animate={{ x: ['-100%', '200%'] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                      />
+                    </motion.div>
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary tabular-nums">
+                      {Math.round(progress)}% Complete
+                    </span>
+                  </div>
                 </div>
-              )}
-
-              {/* Progress Bar */}
-              <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${isError
-                    ? 'bg-gradient-to-r from-red-500 to-red-600'
-                    : 'bg-gradient-to-r from-[#1DB954] to-emerald-400'
-                    }`}
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {/* Shimmer Effect */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                    animate={{
-                      x: ['-100%', '200%'],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'linear',
-                    }}
-                  />
-                </motion.div>
-              </div>
-
-              {/* Progress Percentage */}
-              <div className="text-center mt-4">
-                <span className="text-sm font-medium text-gray-400">
-                  {Math.round(progress)}%
-                </span>
               </div>
             </div>
           </motion.div>

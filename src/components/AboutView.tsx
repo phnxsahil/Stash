@@ -1,4 +1,4 @@
-import { ArrowLeft, Music, Zap, Heart } from 'lucide-react';
+import { ArrowLeft, Heart, Music, Radio, Waves } from 'lucide-react';
 import { Button } from './ui/button';
 import logoLight from '../assets/772b6607fed69ee0832a6f5e7102b5a6b45e84c2.png';
 import logoDark from '../assets/b659e78a263c10d9b32767464e4b074fdb043c31.png';
@@ -8,136 +8,119 @@ interface AboutViewProps {
   theme: 'light' | 'dark';
 }
 
+const pillars = [
+  {
+    title: 'Discovery without clutter',
+    description: 'Stash turns scattered finds across feeds and links into a clean saving flow.',
+    icon: Music,
+  },
+  {
+    title: 'A calmer mobile rhythm',
+    description: 'The product is built around quick capture, reliable matching, and a simple path into your library.',
+    icon: Waves,
+  },
+  {
+    title: 'Private beta, carefully shaped',
+    description: 'Access is intentionally limited while the experience is refined within Spotify development access.',
+    icon: Heart,
+  },
+];
+
 export function AboutView({ onBack, theme }: AboutViewProps) {
+  const activeLogo = theme === 'dark' ? logoDark : logoLight;
+
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-white/10">
-        <div className="container mx-auto px-4 md:px-6 py-4">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
+        <div className="container mx-auto px-4 py-4 md:px-8">
           <div className="flex items-center gap-4">
-            <Button
-              onClick={onBack}
-              variant="ghost"
-              size="icon"
-              className="hover:bg-gray-100 dark:hover:bg-white/10"
-            >
-              <ArrowLeft className="w-5 h-5 transition-transform hover:-translate-x-1" />
+            <Button onClick={onBack} variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl md:text-2xl" style={{ fontWeight: 600 }}>About Stash</h1>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">About</p>
+              <h1 className="text-xl font-medium tracking-tight">Why Stash exists</h1>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
-        <div className="space-y-12">
-          {/* Logo and Tagline */}
-          <div className="text-center space-y-6">
-            <div className="flex justify-center">
-              <img
-                src={theme === 'dark' ? logoDark : logoLight}
-                alt="Stash Logo"
-                className="w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-2xl"
-              />
-            </div>
-            <h2 className="text-3xl md:text-5xl tracking-tight" style={{ fontWeight: 700 }}>
-              The internet is the world's radio.
-            </h2>
-            <p className="text-xl md:text-2xl text-[#1DB954]" style={{ fontWeight: 600 }}>
-              It just needs a save button.
-            </p>
-          </div>
-
-          {/* Mission Statement */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-white/10">
-            <h2 className="text-2xl mb-4" style={{ fontWeight: 600 }}>Our Mission</h2>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg">
-              Stash is designed to solve a universal problem: discovering amazing music across the internet but struggling to save it to your music library. Whether you find a song on YouTube, TikTok, Instagram, or any website, Stash makes it effortless to add it to your Spotify collection instantly.
-            </p>
-          </section>
-
-          {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="glass-card rounded-xl p-6 shadow-lg text-center border border-gray-200 dark:border-white/10">
-              <div className="w-12 h-12 mx-auto mb-4 bg-[#1DB954]/10 rounded-xl flex items-center justify-center">
-                <Music className="w-6 h-6 text-[#1DB954]" />
-              </div>
-              <h3 className="text-lg mb-2" style={{ fontWeight: 600 }}>Universal Discovery</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Find and save music from anywhere on the internet
-              </p>
-            </div>
-
-            <div className="glass-card rounded-xl p-6 shadow-lg text-center border border-gray-200 dark:border-white/10">
-              <div className="w-12 h-12 mx-auto mb-4 bg-[#1DB954]/10 rounded-xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-[#1DB954]" />
-              </div>
-              <h3 className="text-lg mb-2" style={{ fontWeight: 600 }}>Lightning Fast</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                AI-powered matching finds your songs in seconds
-              </p>
-            </div>
-
-            <div className="glass-card rounded-xl p-6 shadow-lg text-center border border-gray-200 dark:border-white/10">
-              <div className="w-12 h-12 mx-auto mb-4 bg-[#1DB954]/10 rounded-xl flex items-center justify-center">
-                <Heart className="w-6 h-6 text-[#1DB954]" />
-              </div>
-              <h3 className="text-lg mb-2" style={{ fontWeight: 600 }}>Simple & Clean</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Beautiful interface inspired by Apple and Spotify
-              </p>
-            </div>
-          </div>
-
-          {/* How It Works */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-white/10">
-            <h2 className="text-2xl mb-6" style={{ fontWeight: 600 }}>How It Works</h2>
-            <div className="space-y-6 text-gray-600 dark:text-gray-400 leading-relaxed text-lg">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#1DB954] text-black flex items-center justify-center font-bold">1</div>
-                <div>
-                  <strong className="text-gray-900 dark:text-white block mb-1">Find Music Anywhere</strong>
-                  <p>Discover songs on YouTube, TikTok, Instagram, or any website.</p>
+      <div className="container mx-auto max-w-4xl px-4 py-8 md:px-8 md:py-12">
+        <div className="space-y-6">
+          <section className="surface-panel overflow-hidden p-6 md:p-10">
+            <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-2xl space-y-4">
+                <div className="beta-chip">
+                  <Radio className="h-3.5 w-3.5" />
+                  Minimal private beta
                 </div>
+                <h2 className="max-w-[14ch] text-3xl font-semibold leading-tight md:text-5xl">
+                  The internet is full of songs that deserve a cleaner save flow.
+                </h2>
+                <p className="max-w-xl leading-relaxed text-muted-foreground">
+                  Stash was created for the real moment of discovery: hearing something in a reel, a short, or a random link and wanting to keep it before it disappears into the scroll.
+                </p>
               </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#1DB954] text-black flex items-center justify-center font-bold">2</div>
+
+              <div className="surface-muted flex min-w-[220px] flex-col items-center gap-4 p-6 text-center">
+                <img src={activeLogo} alt="Stash logo" className="h-24 w-24 object-contain md:h-28 md:w-28" />
                 <div>
-                  <strong className="text-gray-900 dark:text-white block mb-1">Paste the Link</strong>
-                  <p>Copy the URL and paste it into Stash. Our AI instantly identifies the song.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#1DB954] text-black flex items-center justify-center font-bold">3</div>
-                <div>
-                  <strong className="text-gray-900 dark:text-white block mb-1">Save to Spotify</strong>
-                  <p>The track is automatically added to your Spotify library. Done!</p>
+                  <p className="text-sm font-medium text-foreground">Music discovery, simplified</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Designed and developed by Sahil Sharma.</p>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* About the Developer */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-white/10 text-center md:text-left">
-            <h2 className="text-2xl mb-4" style={{ fontWeight: 600 }}>About the Developer</h2>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg">
-              Stash was designed and developed by <strong>Sahil Sharma</strong> with a passion for music discovery and clean, intuitive design. Driven by the belief that music discovery should be frictionless, Sahil built Stash to be the definitive bridge between social media curation and your personal Spotify library.
-            </p>
+          <section className="surface-panel p-6 md:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Mission</p>
+            <div className="mt-4 grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight">Bring order to modern music discovery.</h2>
+                <p className="mt-3 leading-relaxed text-muted-foreground">
+                  The goal is not to make discovery louder. It is to make it easier to act on. Stash keeps the distance between finding a song and saving it as short and dependable as possible.
+                </p>
+              </div>
+              <div className="surface-muted p-5">
+                <p className="text-sm font-medium text-foreground">Current product stance</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Stash is intentionally operating as a private beta while backend reliability, share handling, and Spotify access limits are managed responsibly.
+                </p>
+              </div>
+            </div>
           </section>
 
-          {/* Contact */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg text-center border border-gray-200 dark:border-white/10">
-            <h2 className="text-2xl mb-4" style={{ fontWeight: 600 }}>Get in Touch</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">
-              Have questions or feedback? We'd love to hear from you!
-            </p>
-            <Button
-              onClick={() => window.location.href = 'mailto:worksahilsharma@gmail.com'}
-              className="bg-[#1DB954] hover:bg-[#1ed760] text-black px-10 py-6 rounded-full shadow-lg shadow-[#1DB954]/20"
-              style={{ fontWeight: 600 }}
-            >
-              Contact Us
-            </Button>
+          <section className="grid gap-4 md:grid-cols-3">
+            {pillars.map((pillar) => {
+              const Icon = pillar.icon;
+              return (
+                <article key={pillar.title} className="surface-panel p-5 md:p-6">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold">{pillar.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{pillar.description}</p>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className="surface-panel p-6 md:p-8">
+            <h2 className="text-2xl font-semibold tracking-tight">How Stash works today</h2>
+            <div className="mt-6 space-y-4">
+              {[
+                'Capture a reel, short, or web link before it disappears.',
+                'Identify the track through the matching flow and verify it against Spotify.',
+                'Move the match into your stash workflow with a history that stays organized.',
+              ].map((step, index) => (
+                <div key={step} className="surface-muted flex items-start gap-4 p-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                    {index + 1}
+                  </div>
+                  <p className="pt-1 text-sm leading-relaxed text-muted-foreground">{step}</p>
+                </div>
+              ))}
+            </div>
           </section>
         </div>
       </div>

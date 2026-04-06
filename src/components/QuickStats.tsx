@@ -1,4 +1,4 @@
-import { Music2, TrendingUp, Calendar } from 'lucide-react';
+import { Calendar, Music2, TrendingUp } from 'lucide-react';
 
 interface QuickStatsProps {
   totalSongs: number;
@@ -8,46 +8,31 @@ interface QuickStatsProps {
 }
 
 export function QuickStats({ totalSongs, songsThisWeek, streak, onClick }: QuickStatsProps) {
-  const stats = {
-    totalSongs,
-    thisWeek: songsThisWeek,
-    streak: streak,
-  };
+  const cards = [
+    { label: 'Total Stashed', value: totalSongs, icon: Music2, color: 'text-primary' },
+    { label: 'New This Week', value: songsThisWeek, icon: TrendingUp, color: 'text-sky-500' },
+    { label: 'Active Streak', value: streak, icon: Calendar, color: 'text-emerald-500' },
+  ];
 
   return (
-    <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12">
-      <div
-        onClick={onClick}
-        className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/10 p-4 md:p-6 text-center hover:bg-white/10 transition-all cursor-pointer group"
-      >
-        <div className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 md:mb-3 rounded-xl bg-[#1DB954]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-          <Music2 className="w-5 h-5 md:w-6 md:h-6 text-[#1DB954]" />
-        </div>
-        <p className="text-2xl md:text-3xl mb-1">{stats.totalSongs}</p>
-        <p className="text-gray-400 text-xs md:text-sm">Total Songs</p>
-      </div>
-
-      <div
-        onClick={onClick}
-        className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/10 p-4 md:p-6 text-center hover:bg-white/10 transition-all cursor-pointer group"
-      >
-        <div className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 md:mb-3 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-          <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
-        </div>
-        <p className="text-2xl md:text-3xl mb-1">{stats.thisWeek}</p>
-        <p className="text-gray-400 text-xs md:text-sm">This Week</p>
-      </div>
-
-      <div
-        onClick={onClick}
-        className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/10 p-4 md:p-6 text-center hover:bg-white/10 transition-all cursor-pointer group"
-      >
-        <div className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 md:mb-3 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-          <Calendar className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
-        </div>
-        <p className="text-2xl md:text-3xl mb-1">{stats.streak}</p>
-        <p className="text-gray-400 text-xs md:text-sm">Day Streak</p>
-      </div>
-    </div>
+    <section className="grid grid-cols-3 gap-3 md:gap-6" aria-label="Quick stats">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <button
+            key={card.label}
+            type="button"
+            onClick={onClick}
+            className="surface-panel p-4 md:p-7 text-center transition-all hover:scale-[1.03] active:scale-[0.97] outline-focus group"
+          >
+            <div className={`w-11 h-11 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 rounded-2xl grid place-items-center bg-card/50 border border-border/40 shadow-sm group-hover:border-primary/20 transition-colors ${card.color}`}>
+              <Icon className="w-6 h-6 md:w-7 md:h-7" />
+            </div>
+            <p className="text-xl md:text-4xl font-bold tracking-tight mb-1">{card.value}</p>
+            <p className="text-[9px] md:text-xs uppercase tracking-[0.18em] font-bold text-muted-foreground">{card.label}</p>
+          </button>
+        );
+      })}
+    </section>
   );
 }

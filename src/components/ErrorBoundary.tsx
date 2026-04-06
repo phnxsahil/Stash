@@ -1,4 +1,6 @@
 import { Component, ReactNode } from 'react';
+import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface Props {
     children: ReactNode;
@@ -30,20 +32,38 @@ export class ErrorBoundary extends Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex items-center justify-center min-h-screen bg-background">
-                    <div className="text-center p-8 max-w-md">
-                        <h1 className="text-2xl font-bold mb-4 text-foreground">
-                            Oops! Something went wrong
-                        </h1>
-                        <p className="text-muted-foreground mb-6">
-                            We're sorry, but something unexpected happened. Please try refreshing the page.
-                        </p>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                        >
-                            Refresh Page
-                        </button>
+                <div className="min-h-screen bg-background px-4 py-10 text-foreground">
+                    <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
+                        <div className="surface-panel w-full p-8 text-center md:p-10">
+                            <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-[1.5rem] border border-destructive/20 bg-destructive/10 text-destructive">
+                                <AlertTriangle className="h-8 w-8" />
+                            </div>
+                            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                                Recovery Mode
+                            </p>
+                            <h1 className="mb-3 text-3xl font-bold tracking-tight">
+                                Stash hit an unexpected issue
+                            </h1>
+                            <p className="mx-auto mb-8 max-w-md text-sm leading-relaxed text-muted-foreground md:text-base">
+                                The app ran into a render problem. A refresh usually clears it and brings you back to your library or the current stash flow.
+                            </p>
+                            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                                <Button
+                                    onClick={() => window.location.reload()}
+                                    className="rounded-full bg-primary px-6 text-primary-foreground hover:opacity-90"
+                                >
+                                    <RefreshCcw className="mr-2 h-4 w-4" />
+                                    Refresh page
+                                </Button>
+                                <Button
+                                    onClick={() => this.setState({ hasError: false, error: undefined })}
+                                    variant="outline"
+                                    className="rounded-full"
+                                >
+                                    Try recovery
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );

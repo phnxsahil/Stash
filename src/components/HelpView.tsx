@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { ArrowLeft, Send, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Radio, Send } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
+import { logger } from '../lib/logger';
 
 interface HelpViewProps {
   onBack: () => void;
   theme: 'light' | 'dark';
 }
 
-export function HelpView({ onBack, theme }: HelpViewProps) {
+export function HelpView({ onBack }: HelpViewProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,10 +24,7 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -54,27 +52,21 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
     setIsSubmitting(true);
 
     try {
-      // Create mailto link with form data
       const subject = encodeURIComponent(`Stash Help & Feedback from ${formData.name}`);
       const body = encodeURIComponent(
-        `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
+        `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`,
       );
-      const mailtoLink = `mailto:worksahilsharma@gmail.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:worksahilsharma@gmail.com?subject=${subject}&body=${body}`;
 
-      // Open email client
-      window.location.href = mailtoLink;
-
-      // Show success state
       setIsSubmitted(true);
-      toast.success('Email client opened! Send the email to complete your message.');
+      toast.success('Email client opened. Send the email there to complete your message.');
 
-      // Reset form after delay
       setTimeout(() => {
         setFormData({ name: '', email: '', message: '' });
         setIsSubmitted(false);
       }, 3000);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to prepare help email:', error);
       toast.error('Failed to open email client. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -82,92 +74,89 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field when user starts typing
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
       });
     }
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-white/10">
-        <div className="container mx-auto px-4 md:px-6 py-4">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
+        <div className="container mx-auto px-4 md:px-8 py-4">
           <div className="flex items-center gap-4">
-            <Button
-              onClick={onBack}
-              variant="ghost"
-              size="icon"
-              className="hover:bg-gray-100 dark:hover:bg-white/10"
-            >
+            <Button onClick={onBack} variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 style={{ fontWeight: 600 }}>Help & Feedback</h1>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-muted-foreground">Support</p>
+              <h1 className="text-xl font-semibold tracking-tight">Help & Feedback</h1>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 md:px-6 py-24 max-w-2xl">
-        <div className="space-y-8">
-          {/* FAQ Section */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg">
-            <h2 className="mb-6" style={{ fontWeight: 600 }}>Frequently Asked Questions</h2>
-            <div className="space-y-4">
+      <div className="container mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
+        <div className="space-y-6">
+          <section className="surface-panel p-5 md:p-7">
+            <div className="beta-chip mb-4">
+              <Radio className="h-3.5 w-3.5" />
+              Private beta support
+            </div>
+            <h2 className="text-xl font-bold tracking-tight">Frequently asked</h2>
+            <div className="mt-6 space-y-5">
               <div>
-                <h3 className="mb-2" style={{ fontWeight: 600 }}>How do I save a song?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Simply paste any music link (YouTube, TikTok, Instagram, etc.) into the input field and click Stash. We'll find the song and add it to your Spotify library!
+                <h3 className="font-semibold">How do I save a song?</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Paste or share a music link into Stash. The app identifies the track and saves it to Spotify once access and session state are valid.
                 </p>
               </div>
               <div>
-                <h3 className="mb-2" style={{ fontWeight: 600 }}>What platforms are supported?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Stash works with YouTube, TikTok, Instagram, Twitter, and most websites that feature music content.
+                <h3 className="font-semibold">What platforms are supported?</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Stash currently focuses on Instagram, YouTube, and general web links surfaced through the current stash flow.
                 </p>
               </div>
               <div>
-                <h3 className="mb-2" style={{ fontWeight: 600 }}>Can I customize my settings?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Yes! Visit the Settings page to enable auto-add mode, choose a default playlist, and toggle between light and dark themes.
+                <h3 className="font-semibold">Why does Spotify access look limited?</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  The app is operating as a private beta while staying within Spotify development access limits. That policy is external to Stash and not a bug in your account.
                 </p>
               </div>
               <div>
-                <h3 className="mb-2" style={{ fontWeight: 600 }}>Is my data secure?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Absolutely. We only access your Spotify account information necessary to save songs. Check our Privacy Policy for more details.
+                <h3 className="font-semibold">Why can the backend feel slow after idle time?</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  The free Hugging Face backend can wake from sleep after long idle periods. When that happens, the first retry may take a little longer, but the app now surfaces that state more clearly.
                 </p>
               </div>
             </div>
           </section>
 
-          {/* Contact Form */}
-          <section className="glass-card rounded-2xl p-8 shadow-lg">
-            <h2 className="mb-2" style={{ fontWeight: 600 }}>Send Us a Message</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              Have a question or feedback? We'd love to hear from you!
+          <section className="surface-panel p-5 md:p-7">
+            <h2 className="text-xl font-bold tracking-tight">Send a message</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Have a bug report, UX note, or beta-access question? Send it here and your email client will open with the message prefilled.
             </p>
 
             {isSubmitted ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-16 h-16 mx-auto bg-[#1DB954]/10 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-[#1DB954]" />
+              <div className="py-8 text-center">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-primary/10 text-primary">
+                  <CheckCircle className="h-8 w-8" />
                 </div>
-                <h3 style={{ fontWeight: 600 }}>Message Sent!</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Complete sending the email in your email client to reach us.
+                <h3 className="mt-4 text-lg font-semibold">Message prepared</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Finish sending it from your email client to reach the team.
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 <div>
-                  <label htmlFor="name" className="block mb-2 text-sm" style={{ fontWeight: 500 }}>
-                    Name <span className="text-red-500">*</span>
+                  <label htmlFor="name" className="mb-2 block text-sm font-medium">
+                    Name <span className="text-destructive">*</span>
                   </label>
                   <Input
                     id="name"
@@ -175,17 +164,14 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
                     placeholder="Your name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`glass-light border-gray-200 dark:border-white/20 ${errors.name ? 'border-red-500' : ''
-                      }`}
+                    className={`h-12 rounded-2xl bg-background/50 ${errors.name ? 'border-destructive' : ''}`}
                   />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-                  )}
+                  {errors.name && <p className="mt-1 text-sm text-destructive">{errors.name}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block mb-2 text-sm" style={{ fontWeight: 500 }}>
-                    Email <span className="text-red-500">*</span>
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium">
+                    Email <span className="text-destructive">*</span>
                   </label>
                   <Input
                     id="email"
@@ -193,17 +179,14 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
                     placeholder="your.email@example.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`glass-light border-gray-200 dark:border-white/20 ${errors.email ? 'border-red-500' : ''
-                      }`}
+                    className={`h-12 rounded-2xl bg-background/50 ${errors.email ? 'border-destructive' : ''}`}
                   />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-                  )}
+                  {errors.email && <p className="mt-1 text-sm text-destructive">{errors.email}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block mb-2 text-sm" style={{ fontWeight: 500 }}>
-                    Message <span className="text-red-500">*</span>
+                  <label htmlFor="message" className="mb-2 block text-sm font-medium">
+                    Message <span className="text-destructive">*</span>
                   </label>
                   <Textarea
                     id="message"
@@ -211,40 +194,21 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
                     rows={6}
                     value={formData.message}
                     onChange={(e) => handleInputChange('message', e.target.value)}
-                    className={`glass-light border-gray-200 dark:border-white/20 resize-none ${errors.message ? 'border-red-500' : ''
-                      }`}
+                    className={`rounded-2xl bg-background/50 resize-none ${errors.message ? 'border-destructive' : ''}`}
                   />
-                  {errors.message && (
-                    <p className="mt-1 text-sm text-red-500">{errors.message}</p>
-                  )}
+                  {errors.message && <p className="mt-1 text-sm text-destructive">{errors.message}</p>}
                 </div>
 
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black"
-                  style={{ fontWeight: 600 }}
+                  className="h-12 w-full rounded-2xl bg-primary text-primary-foreground hover:opacity-90"
                 >
-                  {isSubmitting ? (
-                    'Sending...'
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Send Message
-                    </>
-                  )}
+                  {isSubmitting ? 'Preparing...' : <><Send className="mr-2 h-4 w-4" />Send message</>}
                 </Button>
               </form>
             )}
           </section>
-
-          {/* Direct Contact */}
-          <div className="text-center text-sm text-gray-500 dark:text-gray-500">
-            Or email us directly at{' '}
-            <a href="mailto:worksahilsharma@gmail.com" className="text-[#1DB954] hover:underline">
-              worksahilsharma@gmail.com
-            </a>
-          </div>
         </div>
       </div>
     </div>
