@@ -44,3 +44,8 @@ playwright-report
 # Python cache
 __pycache__
 *.pyc
+
+# Stash specific
+.cache
+instagram-cookies.local.txt
+.hf-space-sync/

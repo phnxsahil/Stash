@@ -223,6 +223,12 @@ stash/
 - Verify all environment variables are set
 - Ensure ffmpeg is installed (auto-installed in Docker)
 
+### Free Hugging Face uptime
+- The free `cpu-basic` Hugging Face Space can sleep after prolonged inactivity.
+- Use an external uptime monitor against `https://shanushrma-stash-backend.hf.space/health`.
+- A 12-hour ping cadence is enough to stay comfortably below the 48-hour sleep window while remaining free-tier friendly.
+- Expect occasional cold starts after rebuilds or long idle periods anyway, and keep the frontend retry copy aligned with that behavior.
+
 ---
 
 ## 📝 License
@@ -250,3 +256,11 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 Made with ❤️ for music lovers everywhere
+---
+title: Stash Backend
+emoji: "🎵"
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8000
+---
