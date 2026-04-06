@@ -166,7 +166,7 @@ See [`INSTAGRAM_COOKIES_GUIDE.md`](./INSTAGRAM_COOKIES_GUIDE.md) for detailed in
 
 ## 📊 Features in Detail
 
-### Smart Stash
+### Smart Stash (PWA Revamp v1.1)
 Automatically organizes songs by genre into themed playlists like "Stash: Techno", "Stash: Pop", etc.
 
 ### Rate Limiting
