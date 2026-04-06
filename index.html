@@ -3,11 +3,14 @@
 
 <head>
   <meta name="description"
-    content="Stash | The internet's save button for music. Instantly find and save songs from Instagram Reels, TikTok, and YouTube directly to your Spotify library." />
+    content="Stash | The internet's save button for music. Instantly find and save songs from Instagram Reels, YouTube, and the web directly to your Spotify library." />
   <meta name="keywords"
-    content="stash your music, save music from reels, instagram music to spotify, tiktok music saver, music discovery tool, stash music app" />
+    content="stash your music, save music from reels, instagram music to spotify, youtube music saver, music discovery tool, stash music app" />
   <meta name="author" content="Sahil Sharma" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="apple-touch-icon" href="/logo-512.png" />
 
   <!-- Open Graph / Facebook -->
@@ -55,14 +58,6 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then(() => console.log('Service Worker Registered'))
-        .catch((error) => console.error('Service Worker registration failed', error));
-    }
-  </script>
 </body>
 
 </html>

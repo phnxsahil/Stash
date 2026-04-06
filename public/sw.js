@@ -1,66 +1,115 @@
-const CACHE_VERSION = 'v2'; // Increment this to force cache refresh
-const CACHE_NAME = `stash-cache-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v6';
+const STATIC_CACHE = `stash-static-${CACHE_VERSION}`;
+const RUNTIME_CACHE = `stash-runtime-${CACHE_VERSION}`;
+const IS_LOCALHOST =
+  self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
-// Install event - cache core assets
+const PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/logo-512.png', '/offline.html'];
+
+const NETWORK_ONLY_PATTERNS = [/\/api\//i, /\/auth\/v1\//i, /\/rest\/v1\//i, /\/recognize$/i, /\/save_track$/i, /\/remove_track$/i];
+
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing new service worker...');
+  if (IS_LOCALHOST) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching core assets');
-      return cache.addAll([
-        '/',
-        '/manifest.json',
-        '/favicon.png',
-      ]);
-    }).then(() => {
-      // Force the new service worker to activate immediately
-      return self.skipWaiting();
-    })
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating new service worker...');
+  if (IS_LOCALHOST) {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((cacheNames) => Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName))))
+        .then(() => self.registration.unregister())
+    );
+    return;
+  }
+
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => {
-      // Take control of all pages immediately
-      return self.clients.claim();
-    })
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== STATIC_CACHE && cacheName !== RUNTIME_CACHE) {
+              return caches.delete(cacheName);
+            }
+            return Promise.resolve(false);
+          })
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch event - network first, fallback to cache
+const isNetworkOnlyRequest = (request) => NETWORK_ONLY_PATTERNS.some((pattern) => pattern.test(request.url));
+
+const isStaticAssetRequest = (request) =>
+  request.destination === 'style' ||
+  request.destination === 'script' ||
+  request.destination === 'font' ||
+  request.destination === 'image' ||
+  request.destination === 'manifest';
+
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests for caching
-  if (event.request.method !== 'GET') {
-    return; // Let the browser handle POST/PUT/etc. normally
+  if (IS_LOCALHOST) return;
+
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  if (isNetworkOnlyRequest(request)) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(async () => {
+          const cachedPage = await caches.match(request);
+          if (cachedPage) return cachedPage;
+          return caches.match('/offline.html');
+        })
+    );
+    return;
+  }
+
+  if (isStaticAssetRequest(request)) {
+    event.respondWith(
+      caches.match(request).then(async (cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+
+        try {
+          const networkResponse = await fetch(request);
+          if (networkResponse && networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return networkResponse;
+        } catch {
+          return Response.error();
+        }
+      })
+    );
+    return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cache successful responses
-        if (response.ok) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // If network fails, try cache
-        return caches.match(event.request);
-      })
+    fetch(request).catch(async () => {
+      const cached = await caches.match(request);
+      return cached || Response.error();
+    })
   );
 });

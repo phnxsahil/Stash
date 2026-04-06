@@ -1,19 +1,65 @@
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 export function PWARegistration() {
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker
-          .register('/sw.js')
-          .then((registration) => {
-            console.log('SW registered: ', registration);
-          })
-          .catch((registrationError) => {
-            console.log('SW registration failed: ', registrationError);
-          });
-      });
+    const onOffline = () => toast.warning('You are offline. Stash will use cached screens where possible.');
+    const onOnline = () => toast.success('Back online.');
+
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+
+    return () => {
+      window.removeEventListener('offline', onOffline);
+      window.removeEventListener('online', onOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const isLocalPreview =
+      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (isLocalPreview) {
+      const cleanupLocalServiceWorkers = async () => {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+
+          if ('caches' in window) {
+            const cacheKeys = await caches.keys();
+            await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey)));
+          }
+        } catch (error) {
+          console.error('Failed to clear local service workers: ', error);
+        }
+      };
+
+      cleanupLocalServiceWorkers();
+      return;
     }
+
+    const register = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          if (!worker) return;
+
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              toast.info('A new version of Stash is ready. Refresh to update.');
+            }
+          });
+        });
+      } catch (error) {
+        console.error('SW registration failed: ', error);
+      }
+    };
+
+    register();
   }, []);
 
   return null;

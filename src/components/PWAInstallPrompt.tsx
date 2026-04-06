@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Download, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Download, Radio, X } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -7,85 +7,122 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const DISMISS_KEY = 'stash-pwa-prompt-dismissed-at';
+const DISMISS_COOLDOWN_MS = 1000 * 60 * 60 * 24 * 3; // 3 days
+const SHARED_URL_STORAGE_KEY = 'stash-pending-shared-url';
+
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  const canShowPrompt = useMemo(() => {
+    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    if (!dismissedAt) return true;
+    return Date.now() - dismissedAt > DISMISS_COOLDOWN_MS;
+  }, []);
 
   useEffect(() => {
+    const markInteraction = () => setHasInteracted(true);
+    window.addEventListener('pointerdown', markInteraction, { once: true });
+    window.addEventListener('keydown', markInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', markInteraction);
+      window.removeEventListener('keydown', markInteraction);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canShowPrompt) return;
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowPrompt(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, [canShowPrompt]);
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
+  useEffect(() => {
+    if (!deferredPrompt || !hasInteracted) return;
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (new URLSearchParams(window.location.search).get('url')) return;
+    if (localStorage.getItem(SHARED_URL_STORAGE_KEY)) return;
+
+    const timer = window.setTimeout(() => {
+      setShowPrompt(true);
+    }, 8000);
+
+    return () => window.clearTimeout(timer);
+  }, [deferredPrompt, hasInteracted]);
+
+  useEffect(() => {
+    const handleInstalled = () => {
+      setDeferredPrompt(null);
+      setShowPrompt(false);
     };
+
+    window.addEventListener('appinstalled', handleInstalled);
+    return () => window.removeEventListener('appinstalled', handleInstalled);
   }, []);
+
+  const dismissPrompt = () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    setShowPrompt(false);
+  };
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
-    deferredPrompt.prompt();
+    await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
       setShowPrompt(false);
+      return;
     }
-  };
 
-  const handleDismiss = () => {
-    setShowPrompt(false);
-    // Hide for this session
-    sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+    dismissPrompt();
   };
-
-  // Don't show if already dismissed in this session
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem('pwa-prompt-dismissed');
-    if (dismissed) {
-      setShowPrompt(false);
-    }
-  }, []);
 
   if (!showPrompt || !deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 animate-in slide-in-from-bottom-5 duration-300">
-      <div className="bg-black/95 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl">
+    <div className="fixed bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 pb-safe">
+      <div className="surface-panel p-4 md:p-5 bg-gradient-to-br from-card/92 via-card/84 to-accent/24">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1DB954] to-[#1ed760] flex items-center justify-center flex-shrink-0">
-            <Download className="w-5 h-5 text-black" />
+          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Download className="w-4 h-4 text-primary" />
           </div>
+
           <div className="flex-1 min-w-0">
-            <h4 className="text-white mb-1">Install Stash</h4>
-            <p className="text-gray-400 text-sm mb-3">
-              Add to your home screen for quick access
+            <div className="beta-chip mb-3">
+              <Radio className="h-3.5 w-3.5" />
+              Native sharing
+            </div>
+            <h4 className="text-sm mb-1">Install Stash</h4>
+            <p className="text-xs md:text-sm text-muted-foreground mb-3">
+              Add Stash to your home screen for faster capture and native sharing.
             </p>
             <div className="flex gap-2">
-              <Button
-                onClick={handleInstall}
-                className="bg-[#1DB954] hover:bg-[#1ed760] text-black flex-1"
-              >
+              <Button onClick={handleInstall} className="h-9 px-4 bg-primary text-primary-foreground hover:opacity-90 outline-focus">
                 Install
               </Button>
-              <Button
-                onClick={handleDismiss}
-                variant="ghost"
-                className="text-gray-400 hover:text-white"
-              >
-                Not now
+              <Button onClick={dismissPrompt} variant="outline" className="h-9 px-4 outline-focus">
+                Later
               </Button>
             </div>
           </div>
+
           <Button
-            onClick={handleDismiss}
+            onClick={dismissPrompt}
             variant="ghost"
             size="icon"
-            className="flex-shrink-0 text-gray-400 hover:text-white"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss install prompt"
           >
             <X className="w-4 h-4" />
           </Button>

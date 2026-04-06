@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline | Stash</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Sora", "Space Grotesk", "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f5f8f6;
+      color: #162016;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #121916;
+        color: #e7f0e9;
+      }
+    }
+    .panel {
+      width: min(520px, 100%);
+      border: 1px solid rgba(80, 99, 84, 0.25);
+      border-radius: 18px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(8px);
+    }
+    @media (prefers-color-scheme: dark) {
+      .panel {
+        background: rgba(20, 26, 24, 0.82);
+        border-color: rgba(157, 190, 160, 0.25);
+      }
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.45rem;
+    }
+    p {
+      margin: 0;
+      opacity: 0.85;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>You are offline right now</h1>
+    <p>Stash saved this shell so you can still open parts of the app. Reconnect to stash new songs and sync with Spotify.</p>
+  </main>
+</body>
+</html>
