@@ -6,6 +6,7 @@ import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import LoadingSkeleton from './components/LoadingSkeleton';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { api } from './lib/api';
@@ -22,6 +23,40 @@ const HelpView = lazy(() => import('./components/HelpView').then(m => ({ default
 const StatsPageView = lazy(() => import('./components/StatsPageView').then(m => ({ default: m.StatsPageView })));
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const SHARED_URL_STORAGE_KEY = 'stash-pending-shared-url';
+type StashSubmitOptions = {
+  source?: 'manual' | 'share-target';
+};
+
+function getSharedUrlFromSearch(search: string): string | null {
+  const params = new URLSearchParams(search);
+  const sharedUrlParam = params.get('url');
+  const sharedText = params.get('text') || params.get('title');
+  const payload = sharedUrlParam || sharedText;
+
+  if (!payload) return null;
+
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = payload.match(urlRegex);
+  return sharedUrlParam || (matches && matches[0]) || null;
+}
+
+function storeSharedUrl(url: string) {
+  localStorage.setItem(SHARED_URL_STORAGE_KEY, url);
+}
+
+function readStoredSharedUrl(): string | null {
+  return localStorage.getItem(SHARED_URL_STORAGE_KEY);
+}
+
+function clearStoredSharedUrl() {
+  localStorage.removeItem(SHARED_URL_STORAGE_KEY);
+}
+
+function cleanShareTargetUrl() {
+  const cleanPath = `${window.location.pathname}${window.location.hash}`;
+  window.history.replaceState({}, document.title, cleanPath);
+}
 
 function createDefaultState(theme?: Theme): AppState {
   return {
@@ -65,37 +100,75 @@ export default function App() {
 
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
   const sharedUrlRef = useRef<string | null>(null);
-  const stashSubmitRef = useRef<((url: string) => Promise<void>) | null>(null);
+  const sharedSubmissionRef = useRef<string | null>(null);
+  const stashSubmitRef = useRef<((url: string, options?: StashSubmitOptions) => Promise<void>) | null>(null);
 
-  // Handle Share Target on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedUrlParam = params.get('url');
-    const sharedText = params.get('text') || params.get('title');
-    const payload = sharedUrlParam || sharedText;
+  const queueSharedUrl = useCallback((incomingUrl: string | null) => {
+    if (!incomingUrl) return;
 
-    if (!payload || sharedUrlRef.current) return;
+    const normalizedUrl = incomingUrl.trim();
+    if (!normalizedUrl) return;
 
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const matches = payload.match(urlRegex);
-    const cleanUrl = sharedUrlParam || (matches && matches[0]);
-
-    if (!cleanUrl) return;
-
-    sharedUrlRef.current = cleanUrl;
-    setPendingSharedUrl(cleanUrl);
-
-    // Clean the URL bar so refreshes don't resubmit the payload
-    window.history.replaceState({}, document.title, '/');
+    sharedUrlRef.current = normalizedUrl;
+    storeSharedUrl(normalizedUrl);
+    setPendingSharedUrl(normalizedUrl);
   }, []);
 
   useEffect(() => {
-    if (!pendingSharedUrl || !state.isLoggedIn) return;
+    const syncIncomingShare = () => {
+      const sharedFromSearch = getSharedUrlFromSearch(window.location.search);
+      const sharedFromStorage = readStoredSharedUrl();
+      const nextSharedUrl = sharedFromSearch || sharedFromStorage;
 
-    stashSubmitRef.current?.(pendingSharedUrl);
-    sharedUrlRef.current = null;
-    setPendingSharedUrl(null);
-  }, [pendingSharedUrl, state.isLoggedIn]);
+      if (!nextSharedUrl) return;
+      if (sharedUrlRef.current === nextSharedUrl && pendingSharedUrl === nextSharedUrl) return;
+
+      queueSharedUrl(nextSharedUrl);
+
+      if (sharedFromSearch) {
+        cleanShareTargetUrl();
+      }
+    };
+
+    syncIncomingShare();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncIncomingShare();
+      }
+    };
+
+    window.addEventListener('pageshow', syncIncomingShare);
+    window.addEventListener('popstate', syncIncomingShare);
+    window.addEventListener('focus', syncIncomingShare);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pageshow', syncIncomingShare);
+      window.removeEventListener('popstate', syncIncomingShare);
+      window.removeEventListener('focus', syncIncomingShare);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [pendingSharedUrl, queueSharedUrl]);
+
+  useEffect(() => {
+    if (!pendingSharedUrl || !state.isLoggedIn || state.isProcessing) return;
+    if (sharedSubmissionRef.current === pendingSharedUrl) return;
+
+    sharedSubmissionRef.current = pendingSharedUrl;
+    setState((prev) => ({ ...prev, currentView: 'app' }));
+
+    stashSubmitRef.current
+      ?.(
+        pendingSharedUrl,
+        { source: 'share-target' },
+      )
+      .finally(() => {
+        if (sharedSubmissionRef.current === pendingSharedUrl) {
+          sharedSubmissionRef.current = null;
+        }
+      });
+  }, [pendingSharedUrl, state.isLoggedIn, state.isProcessing]);
 
   // Handle Auth Session
   useEffect(() => {
@@ -216,8 +289,14 @@ export default function App() {
     }
   }, [state.theme]);
 
-  const handleStashSubmit = async (url: string) => {
+  const handleStashSubmit = async (url: string, options?: StashSubmitOptions) => {
     try {
+      if (options?.source === 'share-target') {
+        sharedUrlRef.current = null;
+        clearStoredSharedUrl();
+        setPendingSharedUrl((current) => (current === url ? null : current));
+      }
+
       setState((prev) => ({
         ...prev,
         currentUrl: url,
@@ -254,14 +333,15 @@ export default function App() {
 
     } catch (error) {
       logger.error('Failed to stash:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to find song. Please try again.';
       setState((prev) => ({
         ...prev,
         processingStage: 'error',
-        processingError: 'Failed to find song. Please try again.'
+        processingError: errorMessage
       }));
 
       // Do NOT auto-close on error to allow retry
-      toast.error('Failed to find song. Please try again.');
+      toast.error(errorMessage);
     }
   };
   stashSubmitRef.current = handleStashSubmit;
@@ -374,11 +454,7 @@ export default function App() {
   const extractSourceFromUrl = useCallback(extractSource, []);
 
   // Suspense fallback for lazy-loaded views
-  const viewFallback = (
-    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-[#1DB954] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  const viewFallback = <LoadingSkeleton variant="shell" />;
 
   const renderView = () => {
     switch (state.currentView) {
@@ -430,6 +506,7 @@ export default function App() {
             history={state.history}
             songsThisWeek={songsThisWeek}
             streak={streak}
+            isLoadingHistory={state.isLoadingHistory}
             autoAddTopMatch={state.autoAddTopMatch}
             theme={state.theme}
             onLogout={handleLogout}
@@ -439,6 +516,7 @@ export default function App() {
             onToggleTheme={handleToggleTheme}
             onOpenSettings={() => handleNavigate('settings')}
             onOpenStats={() => handleNavigate('stats')}
+            pendingSharedUrl={pendingSharedUrl}
           />
         );
       case 'landing':
@@ -449,6 +527,7 @@ export default function App() {
             theme={state.theme}
             onToggleTheme={handleToggleTheme}
             onNavigate={(page) => handleNavigate(page)}
+            pendingSharedUrl={pendingSharedUrl}
           />
         );
     }
