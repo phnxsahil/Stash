@@ -5,11 +5,93 @@ import type { Song, SongMatch, Playlist, UserPreferences } from '../types';
 // Re-export types so existing imports from './lib/api' still work
 export type { Song, SongMatch, Playlist } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : window.location.origin);
+const normalizeBaseUrl = (value: string | undefined): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/\/+$/, '');
+};
+
+const configuredApiBase = normalizeBaseUrl(import.meta.env.VITE_API_URL);
+const sameOriginBase = typeof window !== 'undefined' ? normalizeBaseUrl(window.location.origin) : null;
+const isLocalPreviewHost =
+  typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const HF_BACKEND_HOST = 'https://shanushrma-stash-backend.hf.space';
+
+// Local preview should aggressively try real backend hosts before same-origin SPA routes.
+const localRuntimeCandidates = isLocalPreviewHost
+  ? [
+    HF_BACKEND_HOST,
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+  ]
+  : [];
+
+const backendCandidates = Array.from(new Set([
+  configuredApiBase,
+  import.meta.env.DEV ? 'http://localhost:8000' : null,
+  ...localRuntimeCandidates,
+  sameOriginBase ? `${sameOriginBase}/api` : null,
+  sameOriginBase,
+].filter((value): value is string => Boolean(value))));
+
+let resolvedBackendBase: string | null = configuredApiBase;
+
+const isHuggingFaceBackend = (url: string | null | undefined): boolean =>
+  Boolean(url && url.includes('hf.space'));
+
+const isWakeUpStatus = (status: number): boolean => [502, 503, 504, 522, 524].includes(status);
+
+const isSpaFallbackResponse = (response: Response): boolean => {
+  const contentType = response.headers.get('content-type') || '';
+  return response.ok && contentType.includes('text/html');
+};
+
+async function fetchBackend(path: string, init?: RequestInit): Promise<Response> {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const candidates = resolvedBackendBase
+    ? [resolvedBackendBase, ...backendCandidates.filter((base) => base !== resolvedBackendBase)]
+    : backendCandidates;
+
+  if (candidates.length === 0) {
+    throw new Error('No backend API endpoint configured');
+  }
+
+  let lastError: Error | null = null;
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const base = candidates[index];
+    const url = `${base}${normalizedPath}`;
+
+    try {
+      const response = await fetch(url, init);
+
+      if (isSpaFallbackResponse(response)) {
+        logger.warn(`Backend candidate returned HTML fallback: ${url}`);
+        continue;
+      }
+
+      if (response.status === 404 && index < candidates.length - 1) {
+        logger.warn(`Backend candidate returned 404, trying next: ${url}`);
+        continue;
+      }
+
+      resolvedBackendBase = base;
+      return response;
+    } catch (error: any) {
+      logger.warn(`Backend candidate failed: ${url}`, error);
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  throw lastError || new Error('Unable to reach backend API');
+}
+
 logger.log('API Config:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
   MODE: import.meta.env.MODE,
-  BASE_URL: API_BASE_URL
+  BASE_URL: resolvedBackendBase,
+  CANDIDATES: backendCandidates
 });
 
 export const api = {
@@ -61,16 +143,18 @@ export const api = {
     }
 
     try {
-      logger.log(`Fetching: ${API_BASE_URL}/recognize`);
-      const response = await fetch(`${API_BASE_URL}/recognize`, {
+      const response = await fetchBackend('/recognize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
 
       if (!response.ok) {
+        if (isWakeUpStatus(response.status) || (isHuggingFaceBackend(response.url) && response.status === 429)) {
+          throw new Error('The recognition backend is waking up right now. Give it a few seconds, then try again.');
+        }
         if (response.status === 422) {
-          throw new Error("Instagram blocked the download. Try a YouTube link or a different post.");
+          throw new Error("Instagram likely blocked this download or the server cookies are expired. Try a public post, refresh cookies, or use a YouTube link.");
         }
         throw new Error(`Backend Error: ${response.status} ${response.statusText}`);
       }
@@ -92,6 +176,13 @@ export const api = {
       }
     } catch (error) {
       logger.error('API Error:', error);
+      if (
+        error instanceof Error &&
+        (error.message.includes('Failed to fetch') || error.message.includes('Load failed') || error.message.includes('NetworkError')) &&
+        (isHuggingFaceBackend(resolvedBackendBase) || backendCandidates.includes(HF_BACKEND_HOST))
+      ) {
+        throw new Error('The recognition backend may be waking from sleep. Wait a few seconds and try again.');
+      }
       throw error;
     }
   },
@@ -174,7 +265,7 @@ export const api = {
     const token = await this.getSpotifyToken();
     if (token && song.id && song.id.length > 15 && !song.id.includes('.')) {
       try {
-        const res = await fetch(`${API_BASE_URL}/save_track`, {
+        const res = await fetchBackend('/save_track', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -294,7 +385,7 @@ export const api = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/remove_track`, {
+      const response = await fetchBackend('/remove_track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -373,7 +464,7 @@ export const api = {
     try {
       if (history.length === 0) return "No music yet! Start stashing.";
       const songs = history.slice(0, 15).map(s => `${s.song} by ${s.artist}`);
-      const response = await fetch(`${API_BASE_URL}/analyze_vibe`, {
+      const response = await fetchBackend('/analyze_vibe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ songs })

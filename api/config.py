@@ -10,6 +10,7 @@ from typing import List
 from dotenv import load_dotenv
 
 load_dotenv()
+load_dotenv(".env.local", override=False)
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,29 @@ def _load_numbered_cookies(base_name: str, extra_names: List[str] | None = None)
     return cookies
 
 
+def _load_cookie_files(*keys: str) -> List[str]:
+    cookies: List[str] = []
+    seen: set[str] = set()
+
+    for key in keys:
+        path = os.getenv(key, "").strip()
+        if not path:
+            continue
+
+        try:
+            with open(path, "r", encoding="utf-8") as cookie_file:
+                content = cookie_file.read().strip()
+        except OSError as error:
+            logger.warning("Failed to read cookie file from %s: %s", key, error)
+            continue
+
+        if content and content not in seen:
+            cookies.append(content)
+            seen.add(content)
+
+    return cookies
+
+
 class Settings:
     """Application settings loaded from environment variables."""
 
@@ -65,7 +89,10 @@ class Settings:
         # CORS Configuration
         self.ALLOWED_ORIGINS: List[str] = [
             origin.strip()
-            for origin in _load_env_str("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+            for origin in _load_env_str(
+                "ALLOWED_ORIGINS",
+                "http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:4173",
+            ).split(",")
             if origin.strip()
         ]
 
@@ -85,10 +112,16 @@ class Settings:
         self.ENVIRONMENT: str = _load_env_str("ENVIRONMENT", "production")
 
         # Cookie Rotation — instance-level lists (no shared mutable state)
-        self.YTDLP_COOKIES_INSTAGRAM: List[str] = _load_numbered_cookies(
-            "YTDLP_COOKIES_INSTAGRAM",
-            extra_names=["YTDLP_COOKIES"],
-        )
+        self.YTDLP_COOKIES_INSTAGRAM: List[str] = [
+            *_load_cookie_files(
+                "YTDLP_COOKIES_INSTAGRAM_FILE",
+                "YTDLP_COOKIES_FILE",
+            ),
+            *_load_numbered_cookies(
+                "YTDLP_COOKIES_INSTAGRAM",
+                extra_names=["YTDLP_COOKIES"],
+            ),
+        ]
         self.YTDLP_COOKIES_YOUTUBE: List[str] = _load_numbered_cookies(
             "YTDLP_COOKIES_YOUTUBE",
         )
