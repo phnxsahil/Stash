@@ -128,7 +128,7 @@ export function AchievementBanner({ totalSongs }: AchievementBannerProps) {
           animate={{ opacity: 1, y: 0 }}
           className="surface-panel p-5 md:p-6"
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="mb-3 flex items-center gap-4">
             <div className={`w-12 h-12 bg-gradient-to-br ${nextAchievement.color} rounded-2xl flex items-center justify-center shadow-lg border border-white/10 shrink-0`}>
               <nextAchievement.icon className="w-6 h-6 text-white" />
             </div>
@@ -144,6 +144,10 @@ export function AchievementBanner({ totalSongs }: AchievementBannerProps) {
               </p>
             </div>
           </div>
+
+          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+            Keep going. The next milestone should feel close, visible, and worth chasing.
+          </p>
 
           <div className="w-full h-2.5 bg-muted/50 rounded-full overflow-hidden border border-border/20">
             <motion.div

@@ -12,14 +12,13 @@ interface StatsViewProps {
   streak: number;
 }
 
-const COLORS = ['#1DB954', '#1ed760', '#22c55e', '#4ade80', '#86efac'];
+const COLORS = ['#1DB954', '#17c964', '#22c55e', '#7dd3a4', '#b7f0cb'];
 
 export function StatsView({ history, userName, songsThisWeek, streak }: StatsViewProps) {
-  const [vibe, setVibe] = useState<string>("Analyzing your vibe...");
+  const [vibe, setVibe] = useState<string>('Analyzing your vibe...');
 
-  // Generate Genre Data
   const genreCounts: Record<string, number> = {};
-  history.forEach(song => {
+  history.forEach((song) => {
     const g = song.genre || 'Unknown';
     genreCounts[g] = (genreCounts[g] || 0) + 1;
   });
@@ -29,14 +28,13 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
       name,
       value: Math.round((value / history.length) * 100),
       count: value,
-      color: COLORS[idx % COLORS.length]
+      color: COLORS[idx % COLORS.length],
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  // Generate Top Artists Data
-  const artistCounts: Record<string, { count: number, art: string }> = {};
-  history.forEach(song => {
+  const artistCounts: Record<string, { count: number; art: string }> = {};
+  history.forEach((song) => {
     if (!artistCounts[song.artist]) {
       artistCounts[song.artist] = { count: 0, art: song.album_art_url };
     }
@@ -48,12 +46,10 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
       name,
       count: data.count,
       art: data.art,
-      image: data.art
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 3);
 
-  // Achievements
   const achievements = [
     { title: 'First Stash', target: 1, current: history.length, icon: Sparkles },
     { title: 'Collector', target: 10, current: history.length, icon: Music },
@@ -64,31 +60,28 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
     if (history.length > 0) {
       api.getVibeAnalysis(history)
         .then(setVibe)
-        .catch(() => setVibe("Eclectic & Curious"));
+        .catch(() => setVibe('Eclectic and curious.'));
     } else {
-      setVibe("No songs yet. Start stashing!");
+      setVibe('No songs yet. Start stashing.');
     }
   }, [history]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-
-      {/* Vibe Header with Animated Orbs (v1.4 Restoration) */}
-      <div className="relative overflow-hidden rounded-[2.5rem] border border-gray-200 dark:border-white/10 shadow-2xl bg-white/50 dark:bg-zinc-900/40 backdrop-blur-3xl p-10 md:p-16 text-center">
-        {/* Animated Background Orbs */}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      <div className="surface-panel relative overflow-hidden bg-gradient-to-br from-card/95 via-card/88 to-accent/18 p-6 md:p-10">
         {[...Array(3)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-64 h-64 rounded-full blur-[100px] opacity-20 pointer-events-none"
+            className="pointer-events-none absolute h-64 w-64 rounded-full opacity-20 blur-[100px]"
             style={{
-              background: i === 0 ? '#1DB954' : i === 1 ? '#9333EA' : '#3B82F6',
-              left: `${20 + i * 30}%`,
-              top: `${10 + i * 20}%`,
+              background: i === 0 ? '#1DB954' : i === 1 ? '#86efac' : '#22c55e',
+              left: `${12 + i * 24}%`,
+              top: `${8 + i * 16}%`,
             }}
             animate={{
               y: [0, -30, 0],
               x: [0, 20, 0],
-              scale: [1, 1.2, 1],
+              scale: [1, 1.14, 1],
             }}
             transition={{
               duration: 5 + i * 2,
@@ -98,37 +91,33 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
           />
         ))}
 
-        <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-[#1DB954]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1DB954]">Your Musical Identity</span>
+        <div className="relative z-10 space-y-5 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/70 px-4 py-1.5 backdrop-blur-md">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Your Listening Snapshot</span>
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-black text-gray-900 dark:text-white leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-500 dark:from-white dark:via-white dark:to-white/60">
+          <h2 className="text-4xl font-black leading-tight tracking-tight text-foreground md:text-6xl">
             {vibe}
           </h2>
 
-          <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-            A sonic fingerprint of your latest discoveries. You're currently leaning into <span className="text-gray-900 dark:text-white">{genreData[0]?.name || 'new sounds'}</span>.
+          <p className="mx-auto max-w-2xl text-base font-medium leading-relaxed text-muted-foreground md:text-lg">
+            {userName}&apos;s recent saves are leaning into <span className="text-foreground">{genreData[0]?.name || 'new sounds'}</span>, with a player-style snapshot that feels closer to a listening app than a dashboard.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Genre Architecture - v1.4 Restoration */}
-        <div className="lg:col-span-2 glass-card rounded-[2rem] p-8 border border-gray-200 dark:border-white/10 relative overflow-hidden bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center">
-                <Layers className="w-5 h-5 text-[#1DB954]" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Genre Architecture</h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="surface-panel bg-gradient-to-br from-card/94 via-card/88 to-background/75 p-6 md:p-8 lg:col-span-2">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-background/50">
+              <Layers className="h-5 w-5 text-primary" />
             </div>
+            <h3 className="text-xl font-bold tracking-tight text-foreground">Genre breakdown</h3>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="h-[240px] w-full relative">
+          <div className="grid items-center gap-8 md:grid-cols-2">
+            <div className="relative h-[240px] w-full">
               {genreData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -148,87 +137,84 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'rgba(24, 24, 27, 0.95)',
+                        backgroundColor: 'rgba(24, 24, 27, 0.92)',
                         borderRadius: '16px',
                         border: '1px solid rgba(255,255,255,0.1)',
                         backdropFilter: 'blur(10px)',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-500 text-sm font-medium">No data yet</div>
+                <div className="flex h-full items-center justify-center text-sm font-medium text-muted-foreground">No data yet</div>
               )}
-              {/* Center Label */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-black text-gray-900 dark:text-white">{genreData.length}</span>
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Genres</span>
+
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-black text-foreground">{genreData.length}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Genres</span>
               </div>
             </div>
 
             <div className="space-y-4">
               {genreData.map((genre, idx) => (
-                <div key={genre.name} className="flex items-center justify-between group cursor-default">
+                <div key={genre.name} className="group flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{genre.name}</span>
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                    <span className="text-sm font-bold text-muted-foreground transition-colors group-hover:text-foreground">{genre.name}</span>
                   </div>
-                  <span className="text-sm font-mono text-gray-600 dark:text-gray-500">{genre.value}%</span>
+                  <span className="text-sm font-mono text-muted-foreground">{genre.value}%</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Activity Board - v1.4 Restoration */}
         <div className="space-y-6">
-          <div className="glass-card rounded-[2rem] p-8 border border-gray-200 dark:border-white/10 relative bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl border-l-4 border-l-[#1DB954]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-[#1DB954]/20 flex items-center justify-center shadow-lg shadow-[#1DB954]/10">
-                <Activity className="w-6 h-6 text-[#1DB954]" />
+          <div className="surface-panel border-l-4 border-l-primary bg-gradient-to-br from-card/96 to-primary/6 p-6 md:p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 shadow-lg shadow-primary/10">
+                <Activity className="h-6 w-6 text-primary" />
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Activity</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">This Week</p>
+                <p className="mb-1 text-[10px] font-black uppercase leading-none tracking-widest text-muted-foreground">Activity</p>
+                <p className="text-sm font-bold text-foreground">This Week</p>
               </div>
             </div>
 
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-6xl font-black text-gray-900 dark:text-white tracking-tighter">{songsThisWeek}</span>
-              <span className="text-xl font-bold text-[#1DB954]">songs</span>
+            <div className="mb-4 flex items-baseline gap-2">
+              <span className="text-6xl font-black tracking-tighter text-foreground">{songsThisWeek}</span>
+              <span className="text-xl font-bold text-primary">songs</span>
             </div>
 
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 w-fit px-3 py-1 rounded-full border border-emerald-400/20">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span className="uppercase tracking-wider">Trending Up</span>
+            <div className="flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>Trending Up</span>
             </div>
           </div>
 
-          <div className="glass-card rounded-[2rem] p-8 border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl border-l-4 border-l-orange-500">
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center shadow-lg shadow-orange-500/10">
-                <Trophy className="w-6 h-6 text-orange-400" />
+          <div className="surface-panel border-l-4 border-l-orange-500 bg-gradient-to-br from-card/96 to-orange-500/8 p-6 md:p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/20 shadow-lg shadow-orange-500/10">
+                <Trophy className="h-6 w-6 text-orange-400" />
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Streak</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Keep going!</p>
+                <p className="mb-1 text-[10px] font-black uppercase tracking-widest leading-none text-muted-foreground">Streak</p>
+                <p className="text-sm font-bold text-foreground">Keep going</p>
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-6xl font-black text-gray-900 dark:text-white tracking-tighter">{streak}</p>
-              <span className="text-xl font-bold text-orange-400 uppercase tracking-wider">Days</span>
+              <p className="text-6xl font-black tracking-tighter text-foreground">{streak}</p>
+              <span className="text-xl font-bold uppercase tracking-wider text-orange-400">Days</span>
             </div>
           </div>
         </div>
 
-        {/* Top Artists & Achievements Row */}
-        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Artists - v1.4 Restored Card */}
-          <div className="glass-card rounded-[2rem] p-8 border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                <Music2 className="w-4 h-4 text-purple-400" />
+        <div className="grid grid-cols-1 gap-6 lg:col-span-3 lg:grid-cols-2">
+          <div className="surface-panel bg-gradient-to-br from-card/95 via-card/88 to-background/72 p-6 md:p-8">
+            <h3 className="mb-8 flex items-center gap-3 text-xl font-bold text-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/20">
+                <Music2 className="h-4 w-4 text-purple-400" />
               </div>
               Top Artists
             </h3>
@@ -239,41 +225,40 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-all group"
+                  className="group flex items-center justify-between rounded-2xl border border-border/40 bg-background/46 p-4 transition-all hover:bg-background/76"
                 >
                   <div className="flex items-center gap-5">
-                    <span className="text-lg font-black text-gray-400 group-hover:text-[#1DB954] w-6 transition-colors font-mono">#{i + 1}</span>
+                    <span className="w-6 font-mono text-lg font-black text-muted-foreground transition-colors group-hover:text-primary">#{i + 1}</span>
                     <div className="relative">
-                      <img src={artist.art} alt={artist.name} className="w-14 h-14 rounded-2xl object-cover shadow-2xl group-hover:scale-105 transition-transform" />
+                      <img src={artist.art} alt={artist.name} className="h-14 w-14 rounded-2xl object-cover shadow-2xl transition-transform group-hover:scale-105" />
                       <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/10 dark:ring-white/10" />
                     </div>
                     <div>
-                      <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#1DB954] transition-colors">{artist.name}</span>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">{artist.count} stashes</p>
+                      <span className="font-bold text-foreground transition-colors group-hover:text-primary">{artist.name}</span>
+                      <p className="mt-0.5 text-xs font-medium text-muted-foreground">{artist.count} stashes</p>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <TrendingUp className="w-3.5 h-3.5 text-[#1DB954]" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background/60 opacity-0 transition-opacity group-hover:opacity-100">
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
                   </div>
                 </motion.div>
               ))}
               {topArtists.length === 0 && (
-                <div className="py-12 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 mx-auto flex items-center justify-center">
-                    <Music className="w-6 h-6 text-gray-500 dark:text-gray-600" />
+                <div className="space-y-3 py-12 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-background/60">
+                    <Music className="h-6 w-6 text-muted-foreground" />
                   </div>
-                  <p className="text-gray-500 text-sm font-medium">No stashes found yet.</p>
+                  <p className="text-sm font-medium text-muted-foreground">No stashes found yet.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Achievements - v1.4 Restored Card with Export */}
-          <div className="glass-card rounded-[2rem] p-8 border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-orange-400" />
+          <div className="surface-panel bg-gradient-to-br from-card/95 via-card/88 to-background/72 p-6 md:p-8">
+            <div className="mb-8 flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-3 text-xl font-bold text-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/20">
+                  <Sparkles className="h-4 w-4 text-orange-400" />
                 </div>
                 Achievements
               </h3>
@@ -296,29 +281,30 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 + 0.3 }}
-                    className={`p-6 rounded-3xl border ${isComplete ? 'bg-[#1DB954]/10 border-[#1DB954]/30 shadow-lg shadow-[#1DB954]/10' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/5'} transition-all group overflow-hidden relative`}
+                    className={`relative overflow-hidden rounded-3xl border p-5 transition-all ${isComplete ? 'border-primary/30 bg-primary/10 shadow-lg shadow-primary/10' : 'border-border/40 bg-background/45'}`}
                   >
                     {isComplete && (
-                      <div className="absolute top-0 right-0 p-3">
-                        <div className="bg-[#1DB954] rounded-full p-1">
-                          <Sparkles className="w-3 h-3 text-black" />
+                      <div className="absolute right-0 top-0 p-3">
+                        <div className="rounded-full bg-primary p-1">
+                          <Sparkles className="h-3 w-3 text-black" />
                         </div>
                       </div>
                     )}
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isComplete ? 'bg-[#1DB954]/20' : 'bg-gray-200 dark:bg-white/5'}`}>
-                      <Icon className={`w-6 h-6 ${isComplete ? 'text-[#1DB954]' : 'text-gray-500 dark:text-gray-600'}`} />
+
+                    <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${isComplete ? 'bg-primary/20' : 'bg-background/60'}`}>
+                      <Icon className={`h-6 w-6 ${isComplete ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
-                    <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-1">{ach.title}</h4>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-4">
-                      {isComplete ? 'Complete ✅' : `${ach.current}/${ach.target} Songs`}
+                    <h4 className="mb-1 text-sm font-bold text-foreground">{ach.title}</h4>
+                    <p className="mb-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {isComplete ? 'Complete' : `${ach.current}/${ach.target} Songs`}
                     </p>
 
-                    <div className="w-full h-1.5 bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-background/75">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{ duration: 1, delay: i * 0.2 + 0.5 }}
-                        className={`h-full rounded-full ${isComplete ? 'bg-[#1DB954]' : 'bg-gray-400 dark:bg-gray-700'}`}
+                        className={`h-full rounded-full ${isComplete ? 'bg-primary' : 'bg-muted-foreground/50'}`}
                       />
                     </div>
                   </motion.div>

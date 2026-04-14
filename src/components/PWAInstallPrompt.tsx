@@ -91,8 +91,8 @@ export function PWAInstallPrompt() {
   if (!showPrompt || !deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 pb-safe">
-      <div className="surface-panel p-4 md:p-5 bg-gradient-to-br from-card/92 via-card/84 to-accent/24">
+    <div className="fixed bottom-5 left-0 right-0 z-50 px-safe pb-safe md:left-auto md:right-6 md:max-w-sm md:px-0">
+      <div className="surface-panel bg-gradient-to-br from-card/92 via-card/84 to-accent/24 p-4 md:p-5">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
             <Download className="w-4 h-4 text-primary" />
@@ -105,7 +105,7 @@ export function PWAInstallPrompt() {
             </div>
             <h4 className="text-sm mb-1">Install Stash</h4>
             <p className="text-xs md:text-sm text-muted-foreground mb-3">
-              Add Stash to your home screen for faster capture and native sharing.
+              Add Stash to your home screen for faster launch, native sharing, and an app-style mobile shell.
             </p>
             <div className="flex gap-2">
               <Button onClick={handleInstall} className="h-9 px-4 bg-primary text-primary-foreground hover:opacity-90 outline-focus">

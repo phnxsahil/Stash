@@ -43,6 +43,13 @@ export function PWARegistration() {
     const register = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
+        let hasTriggeredAutoRefresh = false;
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (hasTriggeredAutoRefresh) return;
+          hasTriggeredAutoRefresh = true;
+          window.location.reload();
+        });
 
         registration.addEventListener('updatefound', () => {
           const worker = registration.installing;
@@ -50,10 +57,13 @@ export function PWARegistration() {
 
           worker.addEventListener('statechange', () => {
             if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-              toast.info('A new version of Stash is ready. Refresh to update.');
+              toast.success('Stash just updated to the latest version.');
+              worker.postMessage({ type: 'SKIP_WAITING' });
             }
           });
         });
+
+        registration.update().catch(() => null);
       } catch (error) {
         console.error('SW registration failed: ', error);
       }

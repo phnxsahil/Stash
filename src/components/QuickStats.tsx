@@ -15,7 +15,7 @@ export function QuickStats({ totalSongs, songsThisWeek, streak, onClick }: Quick
   ];
 
   return (
-    <section className="grid grid-cols-3 gap-3 md:gap-6" aria-label="Quick stats">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-6" aria-label="Quick stats">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -23,13 +23,15 @@ export function QuickStats({ totalSongs, songsThisWeek, streak, onClick }: Quick
             key={card.label}
             type="button"
             onClick={onClick}
-            className="surface-panel p-4 md:p-7 text-center transition-all hover:scale-[1.03] active:scale-[0.97] outline-focus group"
+            className="surface-panel group flex items-center gap-4 p-4 text-left transition-all hover:scale-[1.02] active:scale-[0.98] outline-focus sm:block sm:p-5 sm:text-center md:p-6"
           >
-            <div className={`w-11 h-11 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 rounded-2xl grid place-items-center bg-card/50 border border-border/40 shadow-sm group-hover:border-primary/20 transition-colors ${card.color}`}>
+            <div className={`grid h-12 w-12 place-items-center rounded-2xl border border-border/40 bg-card/50 shadow-sm transition-colors group-hover:border-primary/20 sm:mx-auto sm:mb-3 md:h-14 md:w-14 md:mb-4 ${card.color}`}>
               <Icon className="w-6 h-6 md:w-7 md:h-7" />
             </div>
-            <p className="text-xl md:text-4xl font-bold tracking-tight mb-1">{card.value}</p>
-            <p className="text-[9px] md:text-xs uppercase tracking-[0.18em] font-bold text-muted-foreground">{card.label}</p>
+            <div className="min-w-0">
+              <p className="text-[1.65rem] font-bold tracking-tight sm:mb-1 md:text-4xl">{card.value}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground md:text-xs">{card.label}</p>
+            </div>
           </button>
         );
       })}

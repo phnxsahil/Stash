@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const STATIC_CACHE = `stash-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `stash-runtime-${CACHE_VERSION}`;
 const IS_LOCALHOST =
@@ -7,6 +7,12 @@ const IS_LOCALHOST =
 const PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/logo-512.png', '/offline.html'];
 
 const NETWORK_ONLY_PATTERNS = [/\/api\//i, /\/auth\/v1\//i, /\/rest\/v1\//i, /\/recognize$/i, /\/save_track$/i, /\/remove_track$/i];
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   if (IS_LOCALHOST) {

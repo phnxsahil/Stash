@@ -2,54 +2,54 @@
 
 :root {
   --font-size: 16px;
-  --font-family-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
-  --font-family-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --font-family-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
+  --font-family-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 
-  --background: oklch(0.99 0.005 0);
-  --foreground: oklch(0.12 0.01 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.01 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.01 0);
-  --primary: oklch(0.65 0.22 145); /* Spotify Green refined */
-  --primary-foreground: oklch(0.99 0.005 0);
-  --secondary: oklch(0.96 0.01 0);
-  --secondary-foreground: oklch(0.12 0.01 0);
-  --muted: oklch(0.94 0.01 0);
-  --muted-foreground: oklch(0.45 0.02 0);
-  --accent: oklch(0.92 0.02 145);
-  --accent-foreground: oklch(0.12 0.01 0);
+  --background: oklch(0.982 0.01 95);
+  --foreground: oklch(0.2 0.014 70);
+  --card: oklch(0.995 0.008 92);
+  --card-foreground: oklch(0.2 0.014 70);
+  --popover: oklch(0.995 0.008 92);
+  --popover-foreground: oklch(0.2 0.014 70);
+  --primary: oklch(0.70 0.19 145); /* More vibrant Apple-style green */
+  --primary-foreground: oklch(0.12 0.01 0);
+  --secondary: oklch(0.95 0.012 90);
+  --secondary-foreground: oklch(0.22 0.014 70);
+  --muted: oklch(0.94 0.012 90);
+  --muted-foreground: oklch(0.5 0.018 70);
+  --accent: oklch(0.93 0.03 145);
+  --accent-foreground: oklch(0.2 0.014 70);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.99 0.005 0);
-  --border: oklch(0.88 0.01 0);
-  --input: oklch(0.98 0.005 0);
-  --input-background: oklch(0.96 0.01 0);
-  --switch-background: oklch(0.82 0.02 0);
+  --border: oklch(0.88 0.014 85);
+  --input: oklch(0.975 0.01 90);
+  --input-background: oklch(0.96 0.012 90);
+  --switch-background: oklch(0.82 0.02 85);
   --ring: oklch(0.65 0.22 145);
   --radius: 1rem;
 }
 
 .dark {
-  --background: oklch(0.17 0.012 30);
-  --foreground: oklch(0.93 0.008 70);
-  --card: oklch(0.22 0.012 32);
-  --card-foreground: oklch(0.93 0.008 70);
-  --popover: oklch(0.22 0.012 32);
-  --popover-foreground: oklch(0.93 0.008 70);
+  --background: oklch(0.19 0.012 75);
+  --foreground: oklch(0.94 0.008 95);
+  --card: oklch(0.24 0.014 78);
+  --card-foreground: oklch(0.94 0.008 95);
+  --popover: oklch(0.24 0.014 78);
+  --popover-foreground: oklch(0.94 0.008 95);
   --primary: oklch(0.72 0.2 145);
   --primary-foreground: oklch(0.12 0.01 0);
-  --secondary: oklch(0.26 0.012 32);
-  --secondary-foreground: oklch(0.93 0.008 70);
-  --muted: oklch(0.28 0.012 34);
-  --muted-foreground: oklch(0.73 0.014 70);
-  --accent: oklch(0.32 0.028 145);
-  --accent-foreground: oklch(0.93 0.008 70);
+  --secondary: oklch(0.28 0.014 80);
+  --secondary-foreground: oklch(0.94 0.008 95);
+  --muted: oklch(0.3 0.014 82);
+  --muted-foreground: oklch(0.76 0.014 92);
+  --accent: oklch(0.34 0.03 145);
+  --accent-foreground: oklch(0.94 0.008 95);
   --destructive: oklch(0.45 0.22 25);
-  --destructive-foreground: oklch(0.93 0.008 70);
-  --border: oklch(0.34 0.012 34);
-  --input: oklch(0.24 0.012 34);
-  --input-background: oklch(0.24 0.012 34);
-  --switch-background: oklch(0.36 0.012 34);
+  --destructive-foreground: oklch(0.94 0.008 95);
+  --border: oklch(0.36 0.014 84);
+  --input: oklch(0.25 0.014 82);
+  --input-background: oklch(0.25 0.014 82);
+  --switch-background: oklch(0.36 0.014 84);
   --ring: oklch(0.72 0.2 145);
 }
 
@@ -103,12 +103,13 @@
   body {
     font-family: var(--font-family-ui);
     @apply bg-background text-foreground;
+    min-height: 100dvh;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background-image:
-      radial-gradient(circle at 90% 0%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 40%),
+      radial-gradient(circle at 90% 0%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 45%),
       radial-gradient(circle at 5% 15%, color-mix(in oklch, var(--foreground) 3%, transparent), transparent 30%),
-      radial-gradient(circle at 15% 95%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 35%),
-      linear-gradient(180deg, color-mix(in oklch, var(--background) 100%, transparent), color-mix(in oklch, var(--card) 24%, transparent));
+      radial-gradient(circle at 15% 95%, color-mix(in oklch, var(--accent) 15%, transparent), transparent 40%),
+      linear-gradient(180deg, var(--background) 0%, color-mix(in oklch, var(--background) 95%, var(--card)) 100%);
     background-attachment: fixed;
   }
 
@@ -122,11 +123,15 @@
 @layer utilities {
   .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
   .pt-safe { padding-top: env(safe-area-inset-top); }
+  .px-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
 
   .surface-panel {
-    @apply rounded-3xl border border-border/55 bg-card/82 backdrop-blur-3xl shadow-[0_24px_54px_-24px_rgba(0,0,0,0.3)];
+    @apply rounded-3xl border border-border/55 bg-card/84 backdrop-blur-3xl shadow-[0_24px_54px_-24px_rgba(0,0,0,0.3)];
     box-shadow:
-      0 24px 54px -24px rgba(0, 0, 0, 0.3),
+      0 24px 54px -24px rgba(0, 0, 0, 0.22),
       inset 0 1px 1px color-mix(in oklch, white 15%, transparent);
   }
 
@@ -137,11 +142,11 @@
   }
 
   .surface-muted {
-    @apply rounded-2xl border border-border/45 bg-background/60;
+    @apply rounded-2xl border border-border/45 bg-background/68;
   }
 
   .section-heading {
-    @apply text-4xl md:text-6xl font-semibold tracking-tight leading-[1.05];
+    @apply text-[clamp(2.5rem,7vw,5.5rem)] font-semibold tracking-tight leading-[0.98];
   }
 
   .subtle-grid {
@@ -167,11 +172,39 @@
   .beta-chip {
     @apply inline-flex items-center gap-2 rounded-full border border-primary/18 bg-primary/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary;
   }
+
+  .mobile-bottom-pad {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 7.5rem);
+  }
 }
 
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
+  }
+
+  .surface-panel {
+    @apply rounded-[1.75rem];
+  }
+
+  .mobile-edge-bleed {
+    /* Removed aggressive negative margins to fix out-of-bounds issues */
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

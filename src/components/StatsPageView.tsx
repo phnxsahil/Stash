@@ -13,26 +13,27 @@ interface StatsPageViewProps {
 
 export function StatsPageView({ onBack, theme, history = [], userName, songsThisWeek, streak }: StatsPageViewProps) {
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-white/10">
-        <div className="container mx-auto px-4 md:px-6 py-4">
+    <div className="min-h-[100dvh] bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/75 backdrop-blur-3xl">
+        <div className="container mx-auto px-safe py-4 md:px-6">
           <div className="flex items-center gap-4">
             <Button
               onClick={onBack}
               variant="ghost"
               size="icon"
-              className="hover:bg-gray-100 dark:hover:bg-white/10"
+              className="rounded-full hover:bg-muted/60"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 style={{ fontWeight: 600 }}>Your Stats</h1>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Stats</p>
+              <h1 className="text-xl font-semibold tracking-tight">Your listening snapshot</h1>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Content - Use enhanced StatsView */}
-      <div className="pt-24 container mx-auto px-4 md:px-6">
+      <div className="container mx-auto px-safe py-6 md:px-6 md:py-8">
         <StatsView
           history={history}
           userName={userName}

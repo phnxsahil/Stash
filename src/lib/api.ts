@@ -135,12 +135,7 @@ export const api = {
 
   async stashUrl(url: string, onStatusUpdate?: (status: string) => void): Promise<SongMatch[]> {
     logger.log('API: stashUrl()', url);
-
-    if (onStatusUpdate) {
-      onStatusUpdate("Downloading Reel...");
-      setTimeout(() => onStatusUpdate("Extracting Audio..."), 1500);
-      setTimeout(() => onStatusUpdate("Identifying Song..."), 3500);
-    }
+    onStatusUpdate?.('Extracting Audio...');
 
     try {
       const response = await fetchBackend('/recognize', {
@@ -148,6 +143,8 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
+
+      onStatusUpdate?.('Identifying Song...');
 
       if (!response.ok) {
         if (isWakeUpStatus(response.status) || (isHuggingFaceBackend(response.url) && response.status === 429)) {
@@ -160,6 +157,7 @@ export const api = {
       }
 
       const data = await response.json();
+      onStatusUpdate?.('Verifying with Spotify...');
 
       if (data.success) {
         return [{
@@ -335,7 +333,6 @@ export const api = {
 
       logger.log("Supabase: Fetching user history...", { user_id: user.id });
 
-      // Try primary query with user_id filter
       const { data, error } = await supabase
         .from('history')
         .select('*')
@@ -343,21 +340,8 @@ export const api = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // Zero-Failure Strategy: Fallback to global fetch on ANY error
-        logger.warn(`Supabase: Fetching by user_id failed (${error.code}). Attempting global fetch fallback...`);
-        logger.debug("Original error was:", error);
-
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('history')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (fallbackError) {
-          logger.error("Supabase: Global fallback fetch failed:", fallbackError);
-          throw fallbackError;
-        }
-        logger.log(`Supabase: Loaded ${fallbackData?.length || 0} items via global fallback.`);
-        return fallbackData || [];
+        logger.error("Supabase: Scoped history fetch failed:", error);
+        throw error;
       }
 
       logger.log(`Supabase: Loaded ${data?.length || 0} items for user.`);
