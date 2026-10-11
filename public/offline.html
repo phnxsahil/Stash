@@ -7,9 +7,10 @@
   <style>
     :root {
       color-scheme: light dark;
-      font-family: "Sora", "Space Grotesk", "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     body {
+      box-sizing: border-box;
       margin: 0;
       min-height: 100vh;
       display: grid;
@@ -25,6 +26,7 @@
       }
     }
     .panel {
+      box-sizing: border-box;
       width: min(520px, 100%);
       border: 1px solid rgba(80, 99, 84, 0.25);
       border-radius: 18px;
@@ -52,7 +54,8 @@
 <body>
   <main class="panel">
     <h1>You are offline right now</h1>
-    <p>Stash saved this shell so you can still open parts of the app. Reconnect to stash new songs and sync with Spotify.</p>
+    <p>Finding and saving songs needs a connection. This offline page cannot send new songs to Spotify. Reconnect, then reload Stash to continue.</p>
+    <button onclick="window.location.reload()" style="margin-top:20px;border:0;border-radius:24px;padding:14px 22px;background:#bfe6a0;color:#1c2715;font:inherit;cursor:pointer">Try again</button>
   </main>
 </body>
 </html>

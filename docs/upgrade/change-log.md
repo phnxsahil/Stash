@@ -44,3 +44,14 @@ Stacked on Round 2; independent visual work while live schema verification is pe
 - Added reduced-motion handling, narrow layout assertions and privacy scroll regression. No horizontal document overflow at 320/390/768/1280.
 
 Validation: production build/typecheck, 21 unit tests, 7 Python tests and 5 browser tests passed. Landing and capture visually inspected at 320/390/768/1280; cream/dark landing, mobile menu, and privacy top position inspected. Fixed narrow header and tablet step spacing after visual checks. No physical iPhone or production auth test. Settings/stats/help redesign and PWA update/offline lifecycle remain separate batches. No merge or deployment.
+
+## PWA A - 12 October 2026
+
+Stacked on Frontend A. Public shell safety before offline data/queues.
+
+- Cache only same-origin public static assets. Auth/API, cross-origin, query-bearing and Authorization requests bypass the cache; private/no-store/opaque/redirected responses are not saved. Navigation requests never cache callback codes or shared URLs; offline navigation falls back to the public offline page.
+- Delete only old Stash caches, not unrelated origin storage. Updates wait for explicit user reload instead of immediately activating/reloading during recognition or a pending history save.
+- Update banner is hidden while work is busy and requires explicit action. Controller changes from other tabs do not automatically reload this tab. Unsaved-text loss is disclosed.
+- Replace install copy promising universal native sharing with browser-dependent support and paste fallback. Offline page states that finding/saving needs a connection and offers retry.
+
+Validation: build/typecheck; 33 unit tests including the real worker event harness; 7 Python tests; 6 browser tests including an explicit-update harness and offline layout at 320/390/1280. Update banner/offline pixels inspected at 390/1280 and offline 320. No real production-worker upgrade, iPhone installation or multi-tab lifecycle certification yet. No offline song recognition, durable retry queue or iOS incoming share-target claim. No merge/deployment.
