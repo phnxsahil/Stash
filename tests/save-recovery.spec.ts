@@ -38,7 +38,19 @@ test('history retry does not repeat Spotify and removal is Stash-only', async ({
       user: { id: 'test-owner', email: 'test@example.invalid', user_metadata: {} },
     }));
   });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
+  await expect(page.getByRole('heading', {name: 'What caught your ear?'})).toBeVisible();
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({ path: `/downloads/stash-ui-capture-${width}.png`, fullPage: false, animations: 'disabled' });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.getByRole('button', {name: 'Open menu'}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.screenshot({path: '/downloads/stash-ui-menu-390.png', animations: 'disabled'});
+  await page.getByRole('button', {name: 'Close', exact: true}).click();
   await page.getByRole('textbox', { name: 'Music source URL' }).fill('https://example.invalid/music');
   await page.getByRole('button', { name: 'Stash this song', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Retry Stash history only' })).toBeVisible();
