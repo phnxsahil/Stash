@@ -472,6 +472,8 @@ export default function App() {
   // Suspense fallback for lazy-loaded views
   const viewFallback = <LoadingSkeleton variant="shell" />;
 
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [state.currentView]);
+
   const renderView = () => {
     switch (state.currentView) {
       case 'privacy':

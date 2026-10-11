@@ -33,3 +33,14 @@ Current Spotify endpoint references checked for this batch:
 - https://developer.spotify.com/documentation/web-api/reference/remove-items-playlist
 - https://developer.spotify.com/documentation/web-api/reference/remove-library-items
 - https://developer.spotify.com/documentation/web-api/reference/create-playlist
+
+## Frontend A - 12 October 2026
+
+Stacked on Round 2; independent visual work while live schema verification is pending.
+
+- Rebuilt landing around record-sleeve artwork and an editorial discovery-to-collection flow. Retained existing local art/logo and warm dark/cream plus green identity; no new remote assets or fake live-analysis badge.
+- Put capture first in the personal app. Replaced oversized achievement/stats blocks with a small stats row below the main action. Removed the floating input button that covered the auto-add control at 320px.
+- Named theme/menu/settings/statistics controls, added accessible mobile sheet title/description and close-on-navigation behavior. Reset scroll when changing views.
+- Added reduced-motion handling, narrow layout assertions and privacy scroll regression. No horizontal document overflow at 320/390/768/1280.
+
+Validation: production build/typecheck, 21 unit tests, 7 Python tests and 5 browser tests passed. Landing and capture visually inspected at 320/390/768/1280; cream/dark landing, mobile menu, and privacy top position inspected. Fixed narrow header and tablet step spacing after visual checks. No physical iPhone or production auth test. Settings/stats/help redesign and PWA update/offline lifecycle remain separate batches. No merge or deployment.

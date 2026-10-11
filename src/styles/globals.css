@@ -224,3 +224,39 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--foreground) 28%, transparent);
 }
+
+/* The collection: editorial type, record sleeves, and a quieter app shell. */
+.discovery-shell { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
+.discovery-page { background: radial-gradient(ellipse at 80% 15%, color-mix(in oklch, var(--primary) 9%, transparent), transparent 40%), var(--background); overflow-x: clip; }
+.discovery-header { position: sticky; top: 0; z-index: 40; border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--background) 90%, transparent); backdrop-filter: blur(20px); }
+.discovery-hero { display: grid; grid-template-columns: 1.08fr 1fr; align-items: center; gap: 64px; padding-block: 88px 96px; }
+.editorial-kicker { display: flex; align-items: center; gap: 10px; font-size: 10px; font-weight: 650; letter-spacing: .18em; text-transform: uppercase; color: var(--muted-foreground); }
+.discovery-title { margin-top: 26px; font-size: clamp(44px, 4.9vw, 66px); line-height: 1.04; letter-spacing: -.065em; font-weight: 650; }
+.discovery-title span { color: var(--primary); }
+.record-scene { position: relative; min-width: 0; padding: 20px 0 0; }
+.record-art { position: relative; width: 73%; aspect-ratio: 1; z-index: 2; border-radius: 3px; overflow: hidden; box-shadow: 0 25px 55px #0004; transform: rotate(-5deg); }
+.record-art img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.65) brightness(.6); }
+.record-art span { position: absolute; top: 12%; left: 10%; font-size: clamp(30px, 3.1vw, 44px); line-height: .96; letter-spacing: -.05em; font-weight: 800; color: #f7f0df; }
+.vinyl-record { width: 73%; aspect-ratio: 1; position: absolute; top: 7%; right: 0; border-radius: 50%; border: 1px solid #333; background: repeating-radial-gradient(circle, #111 0px, #111 2px, #202020 3px, #101010 4px); box-shadow: 8px 15px 40px #0005; display: grid; place-items: center; }
+.vinyl-label { width: 36%; aspect-ratio: 1; border-radius: 50%; background: #bfe6a0; color: #1c2715; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
+.vinyl-label span { font-size: 8px; font-weight: 700; letter-spacing: .14em; }
+.record-caption { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; padding: 12px 0; font-size: 9px; font-weight: 600; letter-spacing: .12em; border-bottom: 1px solid var(--border); color: var(--muted-foreground); }
+.record-caption span:last-child { display: flex; align-items: center; gap: 6px; }
+.discovery-receipt { display: flex; align-items: center; gap: 12px; margin: 24px 0 0 8%; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: 0 14px 24px #0001; transform: rotate(2deg); }
+.receipt-icon { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: color-mix(in oklch, var(--primary) 12%, transparent); color: var(--primary); }
+.discovery-platforms { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; padding-block: 26px; border-block: 1px solid var(--border); font-size: 14px; font-weight: 500; color: var(--muted-foreground); }
+.discovery-step { padding: 32px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); }
+.discovery-step:first-child { padding-left: 0; } .discovery-step:last-child { border-right: 0; }
+.discovery-outro { padding: 56px; border-radius: 24px; border: 1px solid var(--border); background: color-mix(in oklch, var(--primary) 7%, var(--card)); }
+.capture-layout .surface-panel { border-radius: 20px; }
+.capture-layout { max-width: 1040px; }
+@media (max-width: 1023px) {
+ .discovery-hero { grid-template-columns: 1fr; gap: 56px; padding-block: 48px 56px; }
+ .record-scene { width: min(460px, 100%); margin-inline: auto; }
+ .discovery-title { font-size: clamp(40px, 8.8vw, 64px); }
+ .discovery-step { border-right: 0; padding: 26px 0; }
+ .discovery-outro { padding: 32px 24px; }
+ .discovery-platforms { gap: 18px; font-size: 12px; }
+ .discovery-platforms .editorial-kicker { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

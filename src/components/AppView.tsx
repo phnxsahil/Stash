@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, BarChart3, Link2, LogOut, Menu, Moon, Music2, Radio, Settings, Sparkles, Sun } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,10 +8,7 @@ import { Switch } from './ui/switch';
 import { HistoryList } from './HistoryList';
 import { QuickStats } from './QuickStats';
 import LoadingSkeleton from './LoadingSkeleton';
-import { FloatingStashButton } from './FloatingStashButton';
-import { AchievementBanner } from './AchievementBanner';
-import { useIsMobile } from './ui/use-mobile';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './ui/sheet';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Song } from '../lib/api';
 import logoLight from '../assets/stash_logo.png';
@@ -57,9 +54,10 @@ export function AppView({
   onOpenStats,
   pendingSharedUrl,
 }: AppViewProps) {
+  const reduceMotion = useReducedMotion();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const isMobile = useIsMobile();
   const inputRef = useRef<HTMLInputElement>(null);
   const activeLogo = theme === 'dark' ? logoDark : logoLight;
 
@@ -85,17 +83,12 @@ export function AppView({
     }
   };
 
-  const handleFloatingButtonClick = () => {
-    inputRef.current?.focus();
-    inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
-
   return (
     <div className="min-h-screen pb-safe relative overflow-hidden">
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-primary/12 blur-[100px]"
-        animate={{ x: [0, -20, 10, 0], y: [0, 15, -10, 0] }}
+        animate={reduceMotion ? {} : { x: [0, -20, 10, 0], y: [0, 15, -10, 0] }}
         transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
       />
 
@@ -107,7 +100,7 @@ export function AppView({
                 <img src={activeLogo} alt="Stash logo" className="w-9 h-9 object-contain" />
               </div>
               <div className="hidden sm:block">
-                <p className="mb-1 text-[10px] font-semibold uppercase leading-none tracking-[0.22em] text-muted-foreground">Dashboard</p>
+                <p className="mb-1 text-[10px] font-semibold uppercase leading-none tracking-[0.22em] text-muted-foreground">Stash / Your collection</p>
                 <p className="text-sm font-medium tracking-tight">Welcome, {userName}</p>
               </div>
             </div>
@@ -116,6 +109,7 @@ export function AppView({
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 bg-card/50 shadow-sm">
                 <Sun className="w-3.5 h-3.5 text-muted-foreground" />
                 <Switch
+                  aria-label="Dark mode"
                   checked={theme === 'dark'}
                   onCheckedChange={(checked) => onToggleTheme(checked ? 'dark' : 'light')}
                   className="data-[state=checked]:bg-primary"
@@ -124,10 +118,10 @@ export function AppView({
               </div>
 
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={onOpenStats} className="rounded-full hover:bg-muted/50">
+                <Button variant="ghost" size="icon" aria-label="Statistics" onClick={() => { setMenuOpen(false); onOpenStats(); }} className="rounded-full hover:bg-muted/50">
                   <BarChart3 className="w-4.5 h-4.5" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={onOpenSettings} className="rounded-full hover:bg-muted/50">
+                <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => { setMenuOpen(false); onOpenSettings(); }} className="rounded-full hover:bg-muted/50">
                   <Settings className="w-4.5 h-4.5" />
                 </Button>
               </div>
@@ -138,13 +132,14 @@ export function AppView({
             </div>
 
             <div className="md:hidden">
-              <Sheet>
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
+                  <Button variant="ghost" size="icon" aria-label="Open menu" className="rounded-full">
                     <Menu className="w-6 h-6" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent className="bg-background/95 backdrop-blur-xl border-border/40 text-foreground">
+                  <SheetTitle className="sr-only">Your Stash</SheetTitle><SheetDescription className="sr-only">Account, appearance and library settings</SheetDescription>
                   <div className="pt-10 flex flex-col gap-6">
                     <div className="surface-muted p-5 flex items-center gap-4">
                       <Avatar className="w-12 h-12 border border-border/40 shadow-sm">
@@ -162,6 +157,7 @@ export function AppView({
                         <span className="font-semibold">Dark Mode</span>
                       </div>
                       <Switch
+                  aria-label="Dark mode"
                         checked={theme === 'dark'}
                         onCheckedChange={(checked) => onToggleTheme(checked ? 'dark' : 'light')}
                         className="data-[state=checked]:bg-primary"
@@ -169,11 +165,11 @@ export function AppView({
                     </div>
 
                     <div className="grid gap-2">
-                      <Button onClick={onOpenStats} variant="ghost" className="justify-start h-12 font-semibold rounded-xl hover:bg-muted/50">
+                      <Button onClick={() => { setMenuOpen(false); onOpenStats(); }} variant="ghost" className="justify-start h-12 font-semibold rounded-xl hover:bg-muted/50">
                         <BarChart3 className="w-5 h-5 mr-3 text-primary" />
                         Statistics
                       </Button>
-                      <Button onClick={onOpenSettings} variant="ghost" className="justify-start h-12 font-semibold rounded-xl hover:bg-muted/50">
+                      <Button onClick={() => { setMenuOpen(false); onOpenSettings(); }} variant="ghost" className="justify-start h-12 font-semibold rounded-xl hover:bg-muted/50">
                         <Settings className="w-5 h-5 mr-3 text-primary" />
                         Settings
                       </Button>
@@ -190,16 +186,9 @@ export function AppView({
         </div>
       </header>
 
-      <main className="container mx-auto px-4 md:px-8 py-6 md:py-14 max-w-5xl space-y-8 md:space-y-10">
-        <motion.section variants={panelAnim} initial="hidden" animate="show">
-          <QuickStats totalSongs={history.length} songsThisWeek={songsThisWeek} streak={streak} onClick={onOpenStats} />
-        </motion.section>
-
-        <motion.section variants={panelAnim} initial="hidden" animate="show" transition={{ delay: 0.05 }}>
-          <AchievementBanner totalSongs={history.length} />
-        </motion.section>
-
-        <motion.section variants={panelAnim} initial="hidden" animate="show" transition={{ delay: 0.08 }} className="surface-panel p-5 md:p-9 bg-gradient-to-br from-card/95 via-card/84 to-accent/28 relative overflow-hidden">
+      <main className="container mx-auto px-4 md:px-8 py-6 md:py-14 capture-layout space-y-6 md:space-y-8">
+        <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end"><div><p className="editorial-kicker mb-3">Your personal collection</p><h1 className="text-3xl font-semibold tracking-tight md:text-5xl">What caught your ear?</h1></div><p className="max-w-xs text-sm leading-relaxed text-muted-foreground">Bring a link. Find the track. Keep the feeling.</p></section>
+        <motion.section variants={panelAnim} initial={reduceMotion ? false : "hidden"} animate="show" transition={{ delay: 0.08 }} className="surface-panel p-5 md:p-9 bg-gradient-to-br from-card/95 via-card/84 to-accent/28 relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <form onSubmit={handleSubmit} className="space-y-6">
             {pendingSharedUrl && (
@@ -218,7 +207,7 @@ export function AppView({
 
             <div className="beta-chip">
               <Radio className="h-3.5 w-3.5" />
-              Spotify private beta access
+              Paste a link to begin
             </div>
 
             <div className="space-y-2">
@@ -231,7 +220,7 @@ export function AppView({
                 </Label>
               </div>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                Paste any social link. Stash handles extraction, identification, and sync while keeping the mobile flow clear and lightweight.
+                Paste a public reel or short link. Stash looks for a Spotify match, then saves it to your chosen destination.
               </p>
             </div>
 
@@ -264,7 +253,7 @@ export function AppView({
           </form>
         </motion.section>
 
-        <motion.section variants={panelAnim} initial="hidden" animate="show" transition={{ delay: 0.12 }} className="surface-panel p-6 md:p-8">
+        <motion.section variants={panelAnim} initial={reduceMotion ? false : "hidden"} animate="show" transition={{ delay: 0.12 }} className="surface-panel p-6 md:p-8">
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-primary/8 flex items-center justify-center shadow-sm">
@@ -275,7 +264,7 @@ export function AppView({
                   Auto-add top match
                 </Label>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Skip the confirmation step for 2x faster stashing.
+                  Save the first match without a selection step.
                 </p>
               </div>
             </div>
@@ -283,7 +272,9 @@ export function AppView({
           </div>
         </motion.section>
 
-        <motion.section variants={panelAnim} initial="hidden" animate="show" transition={{ delay: 0.16 }}>
+        <QuickStats totalSongs={history.length} songsThisWeek={songsThisWeek} streak={streak} onClick={onOpenStats} />
+
+        <motion.section variants={panelAnim} initial={reduceMotion ? false : "hidden"} animate="show" transition={{ delay: 0.16 }}>
           {isLoadingHistory && history.length === 0 ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between px-2">
@@ -300,7 +291,7 @@ export function AppView({
         </motion.section>
       </main>
 
-      {isMobile && <div className="pb-safe"><FloatingStashButton onClick={handleFloatingButtonClick} /></div>}
+
     </div>
   );
 }
