@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, Trophy, Music2, Sparkles, Music, Layers, Activity } from 'lucide-react';
 import { InstagramExport } from './InstagramExport';
+import { toExportArtists } from '../lib/exportArtists';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState } from 'react';
 import { Song, api } from '../lib/api';
@@ -265,7 +266,7 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
               <InstagramExport
                 totalSongs={history.length}
                 genreData={genreData}
-                topArtists={topArtists}
+                topArtists={toExportArtists(topArtists)}
                 streak={streak}
               />
             </div>
