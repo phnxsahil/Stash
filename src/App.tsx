@@ -97,6 +97,7 @@ export default function App() {
   });
 
   const saveInFlight = useRef(false);
+  const [saving, setSaving] = useState(false);
   const deletesInFlight = useRef(new Set<string>());
   const [pendingHistory, setPendingHistory] = useState<HistorySaveError | null>(null);
   const [retryingHistory, setRetryingHistory] = useState(false);
@@ -366,6 +367,7 @@ export default function App() {
   const handleSongSelection = async (song: SongMatch) => {
     if (saveInFlight.current || pendingHistory) return;
     saveInFlight.current = true;
+    setSaving(true);
     try {
       const result = await api.addTrack(song, extractSource(state.currentUrl), state.defaultPlaylistId);
       applySavedSong(result.song);
@@ -379,12 +381,14 @@ export default function App() {
       }
     } finally {
       saveInFlight.current = false;
+      setSaving(false);
     }
   };
 
   const retryHistoryOnly = async () => {
     if (!pendingHistory || saveInFlight.current) return;
     saveInFlight.current = true;
+    setSaving(true);
     setRetryingHistory(true);
     try {
       applySavedSong(await api.saveHistory(pendingHistory.payload));
@@ -394,6 +398,7 @@ export default function App() {
       toast.error('History is still unconfirmed. Keep this page open and retry when connected.');
     } finally {
       saveInFlight.current = false;
+      setSaving(false);
       setRetryingHistory(false);
     }
   };
@@ -595,10 +600,10 @@ export default function App() {
           }}
         />
         <PWAInstallPrompt />
-        <PWARegistration />
+        <PWARegistration busy={saving || state.isProcessing || !!pendingHistory} />
 
         <Toaster position="bottom-right" theme={state.theme} />
       </div>
     </ErrorBoundary>
   );
-}
+    }
