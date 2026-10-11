@@ -65,3 +65,7 @@ Validation: production build/typecheck, 33 unit tests, 7 Python tests and 8 brow
 ## History sync preparation
 
 Added an owner-bound, snapshot-first coordinator with nine deterministic race/isolation tests and rollout notes. This is unused preparation, not live sync. No channel or database publication is opened. Live schema/RLS and two-user isolation remain blocking gates. Current history fetcher's swallowed-error behavior and App auth cleanup are explicitly identified as wiring prerequisites.
+
+## Strict history fetch
+
+History loading no longer translates auth/network/query failures into a successful empty snapshot. Verifies the session, optional expected owner and every returned row owner before returning ordered data. Existing App catch path keeps visible history on errors. Nine tests cover verified empty results, auth failure, changed account, failed queries and mixed-owner rejection. This is not RLS proof, realtime wiring or full auth-race cleanup; a denied SELECT can still return an empty result under RLS, so two-user live tests remain required.

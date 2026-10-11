@@ -318,33 +318,20 @@ export const api = {
     }
   },
 
-  async getUserHistory(): Promise<Song[]> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        logger.warn("History: No authenticated user found, returning empty history.");
-        return [];
-      }
-
-      logger.log("Supabase: Fetching user history...", { user_id: user.id });
-
-      const { data, error } = await supabase
-        .from('history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        logger.error("Supabase: Scoped history fetch failed:", error);
-        throw error;
-      }
-
-      logger.log(`Supabase: Loaded ${data?.length || 0} items for user.`);
-      return data || [];
-    } catch (err) {
-      logger.error("API: getUserHistory critical failure:", err);
-      return [];
+  async getUserHistory(expectedOwnerId?: string): Promise<Song[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw new Error('History could not verify your Stash session.');
+    if (!user) throw new Error('Sign in before loading history.');
+    if (expectedOwnerId && user.id !== expectedOwnerId) {
+      throw new Error('Stash account changed while loading history.');
     }
+    const { data, error } = await supabase.from('history').select('*')
+      .eq('user_id', user.id).order('created_at', { ascending: false });
+    if (error || !Array.isArray(data)) throw new Error('Stash history could not be loaded. Your current history was kept.');
+    if (data.some(row => row.user_id !== user.id)) {
+      throw new Error('History returned unexpected owner data. Nothing was applied.');
+    }
+    return data;
   },
 
   async deleteSong(id: string): Promise<void> {
