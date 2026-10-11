@@ -3,6 +3,7 @@ import { Instagram, Download, Share2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import html2canvas from 'html2canvas';
+import type { ExportArtist } from '../lib/exportArtists';
 
 // Shared component for 1:1 fidelity between preview and export
 const InstagramStoryCard = React.forwardRef<HTMLDivElement, {
@@ -101,7 +102,7 @@ InstagramStoryCard.displayName = 'InstagramStoryCard';
 interface InstagramExportProps {
   totalSongs: number;
   genreData?: { name: string; value: number; color: string }[];
-  topArtists?: { name: string; image: string }[];
+  topArtists?: ExportArtist[];
   streak?: number;
 }
 
