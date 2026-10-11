@@ -69,3 +69,9 @@ Added an owner-bound, snapshot-first coordinator with nine deterministic race/is
 ## Strict history fetch
 
 History loading no longer translates auth/network/query failures into a successful empty snapshot. Verifies the session, optional expected owner and every returned row owner before returning ordered data. Existing App catch path keeps visible history on errors. Nine tests cover verified empty results, auth failure, changed account, failed queries and mixed-owner rejection. This is not RLS proof, realtime wiring or full auth-race cleanup; a denied SELECT can still return an empty result under RLS, so two-user live tests remain required.
+
+## Auth read lifecycle
+
+Auth callback now schedules data reads outside the synchronous Supabase callback. Sign-out and account changes clear account-owned UI/retry state immediately and invalidate old history/playlist reads. Initial session bootstrap cannot overwrite a newer auth event. Token refresh preserves the current view. Removed duplicate history initialization and guarded in-flight snapshots against confirmed local saves/deletes. Browser test holds owner A's request, switches to owner B, then resolves A and signs out; only B is shown and sign-out clears it.
+
+This batch covers read lifecycle, not complete in-flight mutation cancellation/reconciliation. A save already sent to Spotify cannot be undone by an account switch. Live RLS, channel wiring and two-user tests remain gated.
