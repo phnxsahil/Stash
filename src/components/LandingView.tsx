@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { ArrowRight, ArrowUpRight, Check, Link2, Moon, Music2, Sun } from 'lucide-react';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
@@ -16,9 +16,14 @@ interface LandingViewProps {
 
 export function LandingView({ onConnect, theme, onToggleTheme, onNavigate, pendingSharedUrl }: LandingViewProps) {
   const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 24 });
+  const sleeveTilt = useTransform(scrollYProgress, [0, 0.35], [-5, 2]);
+  const recordTurn = useTransform(scrollYProgress, [0, 0.5], [0, 110]);
   const reveal = { initial: reduceMotion ? false as const : { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.55 } };
   return (
     <div className="discovery-page min-h-screen text-foreground">
+      <motion.div className="reading-progress" style={{ scaleX: reduceMotion ? 0 : progress }} aria-hidden />
       <header className="discovery-header">
         <div className="discovery-shell flex items-center justify-between gap-3 py-4">
           <a href="#" aria-label="Stash home" className="flex items-center gap-3">
@@ -48,9 +53,9 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate, pendi
             </div>
             <p className="mt-5 text-xs leading-relaxed text-muted-foreground">Spotify connection required. Access is currently in private beta.</p>
           </motion.div>
-          <motion.div {...reveal} className="record-scene" aria-label="Illustration of a music discovery saved to a collection">
-            <div className="record-art"><img src={heroImage} alt="Abstract artwork for a music collection" /><span>THE NEXT<br />GOOD FIND.</span></div>
-            <div className="vinyl-record" aria-hidden><div className="vinyl-label"><Music2 className="size-9" /><span>STASH / SIDE A</span></div></div>
+          <motion.div {...reveal} transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 0.18 }} className="record-scene" aria-label="Illustration of a music discovery saved to a collection">
+            <motion.div className="record-art" style={{ rotate: reduceMotion ? -5 : sleeveTilt }} whileHover={reduceMotion ? undefined : { rotate: -2, y: -8 }} transition={{ type: "spring", stiffness: 170, damping: 20 }}><img src={heroImage} alt="Abstract artwork for a music collection" /><span>THE NEXT<br />GOOD FIND.</span></motion.div>
+            <motion.div className="vinyl-record" style={{ rotate: reduceMotion ? 0 : recordTurn }} aria-hidden><div className="vinyl-label"><Music2 className="size-9" /><span>STASH / SIDE A</span></div></motion.div>
             <div className="record-caption"><span>01 / YOUR NEW ROTATION</span><span>Keep listening <ArrowUpRight className="size-4" /></span></div>
             <div className="discovery-receipt"><span className="receipt-icon"><Check className="size-5" /></span><div><p className="text-sm font-bold">A good find deserves a home.</p><p className="mt-1 text-xs text-muted-foreground">From a passing moment to your collection.</p></div></div>
           </motion.div>
@@ -64,7 +69,7 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate, pendi
             <p className="max-w-sm leading-relaxed text-muted-foreground">One link is all you need to start. Stash finds a match so you can decide what belongs in your rotation.</p>
           </motion.div>
           <div className="mt-12 grid gap-0 lg:grid-cols-3">
-            {[{ n: '01', icon: Link2, title: 'Bring the moment', body: 'Copy a reel or short link and paste it into Stash. On iPhone, paste is the starting point.' }, { n: '02', icon: Music2, title: 'Find the track', body: 'Stash listens to the audio and looks for a Spotify match. Check the result before you keep it.' }, { n: '03', icon: Check, title: 'Make it yours', body: 'Save to Liked Songs or your selected playlist. Your Stash history keeps the discovery close.' }].map(step => <motion.article {...reveal} key={step.n} className="discovery-step"><div className="mb-8 flex items-center justify-between"><span className="editorial-kicker">{step.n}</span><step.icon className="size-6 text-primary" /></div><h3 className="text-xl font-semibold">{step.title}</h3><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{step.body}</p></motion.article>)}
+            {[{ n: '01', icon: Link2, title: 'Bring the moment', body: 'Copy a reel or short link and paste it into Stash. On iPhone, paste is the starting point.' }, { n: '02', icon: Music2, title: 'Find the track', body: 'Stash listens to the audio and looks for a Spotify match. Check the result before you keep it.' }, { n: '03', icon: Check, title: 'Make it yours', body: 'Save to Liked Songs or your selected playlist. Your Stash history keeps the discovery close.' }].map(step => <motion.article {...reveal} key={step.n} whileHover={reduceMotion ? undefined : { y: -6 }} transition={{ type: "spring", stiffness: 200, damping: 22 }} className="discovery-step"><div className="mb-8 flex items-center justify-between"><span className="editorial-kicker">{step.n}</span><step.icon className="size-6 text-primary" /></div><h3 className="text-xl font-semibold">{step.title}</h3><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{step.body}</p></motion.article>)}
           </div>
         </section>
         <section className="discovery-shell pb-20"><motion.div {...reveal} className="discovery-outro"><p className="editorial-kicker">Your next favorite is out there.</p><h2 className="mt-5 text-4xl font-semibold tracking-tight md:text-6xl">Don't let it disappear.</h2><Button onClick={onConnect} className="mt-8 h-14 rounded-full px-8 text-base">Connect Spotify <ArrowUpRight className="ml-3 size-5" /></Button></motion.div></section>
