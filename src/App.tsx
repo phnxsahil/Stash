@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
@@ -91,6 +92,7 @@ function extractSource(url: string): string {
 }
 
 export default function App() {
+  const reduceMotion = useReducedMotion();
   const [state, setState] = useState<AppState>(() => {
     const savedTheme = localStorage.getItem('stash-theme') as Theme | null;
     return createDefaultState(savedTheme || undefined);
@@ -559,7 +561,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="size-full">
-        {renderView()}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={state.currentView} initial={reduceMotion ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? undefined : { opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
         {pendingHistory && state.isLoggedIn && (
           <section role="alert" aria-label="History save needs attention"
             className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-lg rounded-2xl border border-border bg-background p-5 shadow-xl">
@@ -606,4 +612,4 @@ export default function App() {
       </div>
     </ErrorBoundary>
   );
-    }
+}

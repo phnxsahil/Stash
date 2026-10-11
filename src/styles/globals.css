@@ -260,3 +260,10 @@
  .discovery-platforms .editorial-kicker { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+.reading-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; background: var(--primary); transform-origin: left; }
+.discovery-page button, .capture-layout button { transition: transform .2s cubic-bezier(.2,.7,.2,1), background .2s, box-shadow .2s; }
+@media (hover: hover) { .discovery-page button:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #0002; } }
+.discovery-page button:active, .capture-layout button:active { transform: scale(.97); }
+
+#how-it-works { scroll-margin-top: 92px; }
