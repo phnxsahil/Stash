@@ -130,4 +130,4 @@ export function PWAInstallPrompt() {
       </div>
     </div>
   );
-      }
+}
