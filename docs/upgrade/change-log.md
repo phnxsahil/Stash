@@ -55,3 +55,9 @@ Stacked on Frontend A. Public shell safety before offline data/queues.
 - Replace install copy promising universal native sharing with browser-dependent support and paste fallback. Offline page states that finding/saving needs a connection and offers retry.
 
 Validation: build/typecheck; 33 unit tests including the real worker event harness; 7 Python tests; 6 browser tests including an explicit-update harness and offline layout at 320/390/1280. Update banner/offline pixels inspected at 390/1280 and offline 320. No real production-worker upgrade, iPhone installation or multi-tab lifecycle certification yet. No offline song recognition, durable retry queue or iOS incoming share-target claim. No merge/deployment.
+
+## Frontend B - motion follow-up
+
+User requested more animation after the first previews. Adds scroll-linked record rotation/sleeve tilt, spring reading progress, hover/tap interactions and short view transitions. Keeps explicit reduced-motion guards; no perpetual animation loop or remote animation library.
+
+Validation: production build/typecheck, 33 unit tests, 7 Python tests and 8 browser tests passed. Actual scroll position and changing vinyl transform checked at 320/390/768/1280; screenshots inspected. Anchor scroll-margin adjusted and rechecked after pixels showed a hidden kicker. Reduced-motion layout and navigation regression passed. No physical-device performance certification, merge or deployment.
