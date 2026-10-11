@@ -61,3 +61,7 @@ Validation: build/typecheck; 33 unit tests including the real worker event harne
 User requested more animation after the first previews. Adds scroll-linked record rotation/sleeve tilt, spring reading progress, hover/tap interactions and short view transitions. Keeps explicit reduced-motion guards; no perpetual animation loop or remote animation library.
 
 Validation: production build/typecheck, 33 unit tests, 7 Python tests and 8 browser tests passed. Actual scroll position and changing vinyl transform checked at 320/390/768/1280; screenshots inspected. Anchor scroll-margin adjusted and rechecked after pixels showed a hidden kicker. Reduced-motion layout and navigation regression passed. No physical-device performance certification, merge or deployment.
+
+## History sync preparation
+
+Added an owner-bound, snapshot-first coordinator with nine deterministic race/isolation tests and rollout notes. This is unused preparation, not live sync. No channel or database publication is opened. Live schema/RLS and two-user isolation remain blocking gates. Current history fetcher's swallowed-error behavior and App auth cleanup are explicitly identified as wiring prerequisites.
