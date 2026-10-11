@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { logger } from './logger';
+import { HistorySaveError, type HistorySavePayload, type SaveResult } from './saveOutcome';
 import type { Song, SongMatch, Playlist, UserPreferences } from '../types';
 
 // Re-export types so existing imports from './lib/api' still work
@@ -49,6 +50,12 @@ const isSpaFallbackResponse = (response: Response): boolean => {
 
 async function fetchBackend(path: string, init?: RequestInit): Promise<Response> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (path === '/save_track' || path === '/remove_track') {
+    if (!resolvedBackendBase) await fetchBackend('/');
+    if (!resolvedBackendBase) throw new Error('No backend API endpoint confirmed');
+    return fetch(`${resolvedBackendBase}${normalizedPath}`, init);
+  }
+
   const candidates = resolvedBackendBase
     ? [resolvedBackendBase, ...backendCandidates.filter((base) => base !== resolvedBackendBase)]
     : backendCandidates;
@@ -103,7 +110,7 @@ export const api = {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'spotify',
         options: {
-          scopes: 'user-library-read user-library-modify playlist-read-private playlist-modify-public',
+          scopes: 'user-library-read user-library-modify playlist-read-private playlist-modify-public playlist-modify-private',
           redirectTo: redirectUrl,
           skipBrowserRedirect: true, // Manual redirect is more reliable in various browsers
         }
@@ -203,7 +210,7 @@ export const api = {
     if (!token) return false;
 
     try {
-      const response = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+      const response = await fetch(`https://api.spotify.com/v1/me/library?uris=${encodeURIComponent(`spotify:track:${trackId}`)}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -229,7 +236,7 @@ export const api = {
     if (!token || !playlistId || playlistId === '1') return false;
 
     try {
-      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/items`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -253,74 +260,62 @@ export const api = {
     }
   },
 
-  async addTrack(song: SongMatch, source: string, playlistId?: string): Promise<{ song: Song; playlistName?: string }> {
-    logger.log('API: addTrack()', song);
+  async saveHistory(payload: HistorySavePayload): Promise<Song> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user || user.id !== payload.user_id) throw new Error('Sign in to the same Stash account to retry history.');
+    // A stable client ID makes an uncertain insert safe to retry without duplicates.
+    const { data, error } = await supabase.from('history').upsert(payload, { onConflict: 'id' }).select().single();
+    if (error || !data) throw new Error('Stash history could not be confirmed.');
+    return data as Song;
+  },
 
-    let savedPlaylistName = '';
-    let genre = 'Unknown'; // Default value
+  async addTrack(song: SongMatch, source: string, playlistId = '1'): Promise<SaveResult> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Sign in before saving.');
+    const trackId = /^[a-zA-Z0-9]{22}$/.test(song.id) ? song.id : null;
+    let playlistName = 'Stash';
+    let destinationId = '';
+    let genre = 'Unknown';
+    let spotifySaved = false;
 
-    // Call Backend to Save (Handles Smart Stash & Spotify)
-    const token = await this.getSpotifyToken();
-    if (token && song.id && song.id.length > 15 && !song.id.includes('.')) {
+    if (trackId) {
+      const token = await this.getSpotifyToken();
+      if (!token) throw new Error('Reconnect Spotify before saving this track.');
+      let response: Response;
       try {
-        const res = await fetchBackend('/save_track', {
+        response = await fetchBackend('/save_track', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: token,
-            track_id: song.id,
-            playlist_id: playlistId || '1'
-          })
+          body: JSON.stringify({ token, track_id: trackId, playlist_id: playlistId }),
         });
-        const data = await res.json();
-        if (data.success && data.playlist_name) {
-          savedPlaylistName = data.playlist_name;
-        }
-        genre = data.genre || 'Unknown'; // Extract genre from backend response
-        logger.log("Backend Save Success:", data);
-      } catch (err) {
-        logger.error("Backend Save Error:", err);
+      } catch {
+        throw new Error('Spotify save could not be confirmed. Check Spotify before trying again; the track may already be there.');
       }
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success !== true) {
+        throw new Error(response.status === 401
+          ? 'Reconnect Spotify before saving.'
+          : 'Spotify save could not be confirmed. Check the selected destination before trying again.');
+      }
+      if (!data.playlist_id || !data.playlist_name) throw new Error('Spotify accepted the save but its destination is unknown. Check Spotify before trying again.');
+      playlistName = data.playlist_name;
+      destinationId = data.playlist_id;
+      genre = data.genre || 'Unknown';
+      spotifySaved = true;
     }
 
-    // Save to Supabase with FULL payload (all columns now exist!)
-    let savedSong: Song | null = null;
+    const payload = {
+      id: crypto.randomUUID(), user_id: user.id,
+      song: song.song, artist: song.artist, source: source || 'Web',
+      album_art_url: song.album_art_url, preview_url: song.preview_url || null,
+      spotify_url: song.spotify_url || (trackId ? `https://open.spotify.com/track/${trackId}` : null), genre,
+    };
+    const result = { playlistName, destinationId, spotifySaved };
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Authentication required to save history");
-
-      const payload = {
-        user_id: user.id,
-        song: song.song,
-        artist: song.artist,
-        source: source || 'Web',
-        album_art_url: song.album_art_url,
-        preview_url: song.preview_url || null,
-        spotify_url: song.spotify_url || `https://open.spotify.com/track/${song.id}`,
-        genre: genre,
-      };
-
-      logger.log("Supabase: Saving track with full payload...", { song: song.song, user_id: user.id });
-
-      const { data, error } = await supabase
-        .from('history')
-        .insert(payload)
-        .select()
-        .single();
-
-      if (error) {
-        logger.error("Supabase: Save failed:", error);
-        throw new Error(`Database save failed: ${error.message}`);
-      }
-
-      logger.log("Supabase: Save successful!");
-      savedSong = data as Song;
-    } catch (dbError) {
-      logger.error("CRITICAL DATABASE ERROR:", dbError);
-      throw dbError;
+      return { song: await this.saveHistory(payload), ...result };
+    } catch {
+      throw new HistorySaveError(payload, result);
     }
-
-    return { song: savedSong!, playlistName: savedPlaylistName };
   },
 
   async getUserHistory(): Promise<Song[]> {
@@ -353,41 +348,25 @@ export const api = {
   },
 
   async deleteSong(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('history')
-      .delete()
-      .match({ id });
-
-    if (error) throw error;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Sign in before removing history.');
+    const { data, error } = await supabase.from('history').delete()
+      .match({ id, user_id: user.id }).select('id');
+    if (error || !data?.some(row => row.id === id)) throw new Error('Stash history removal could not be confirmed.');
   },
 
-  async removeFromSpotify(trackId: string, playlistId?: string): Promise<void> {
+  async removeFromSpotify(trackId: string, playlistId: string): Promise<void> {
+    if (!/^[a-zA-Z0-9]{22}$/.test(trackId) || !playlistId || playlistId === 'smart_sort') {
+      throw new Error('An exact track and saved destination are required.');
+    }
     const token = await this.getSpotifyToken();
-    if (!token) {
-      logger.warn('No Spotify token, skipping Spotify deletion');
-      return;
-    }
-
-    try {
-      const response = await fetchBackend('/remove_track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          track_id: trackId,
-          playlist_id: playlistId || '1'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to remove from Spotify: ${response.status}`);
-      }
-
-      logger.log('Successfully removed from Spotify');
-    } catch (error) {
-      logger.error('Error removing from Spotify:', error);
-      // Don't throw - we still want to delete from history even if Spotify fails
-    }
+    if (!token) throw new Error('Reconnect Spotify before removing this track.');
+    const response = await fetchBackend('/remove_track', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, track_id: trackId, playlist_id: playlistId }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.success !== true) throw new Error('Spotify removal could not be confirmed.');
   },
 
   async updateUserPreferences(prefs: UserPreferences): Promise<void> {

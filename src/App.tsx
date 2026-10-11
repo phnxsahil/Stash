@@ -10,6 +10,7 @@ import LoadingSkeleton from './components/LoadingSkeleton';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { api } from './lib/api';
+import { HistorySaveError } from './lib/saveOutcome';
 import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
 import { calculateStreak } from './lib/analytics';
@@ -94,6 +95,11 @@ export default function App() {
     const savedTheme = localStorage.getItem('stash-theme') as Theme | null;
     return createDefaultState(savedTheme || undefined);
   });
+
+  const saveInFlight = useRef(false);
+  const deletesInFlight = useRef(new Set<string>());
+  const [pendingHistory, setPendingHistory] = useState<HistorySaveError | null>(null);
+  const [retryingHistory, setRetryingHistory] = useState(false);
 
   // Force mood board refresh when songs change
   const [moodBoardKey, setMoodBoardKey] = useState(0);
@@ -281,6 +287,7 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
+      setPendingHistory(null);
       setState(createDefaultState(state.theme));
       toast.success('Logged out successfully');
     } catch (error) {
@@ -290,6 +297,10 @@ export default function App() {
   }, [state.theme]);
 
   const handleStashSubmit = async (url: string, options?: StashSubmitOptions) => {
+    if (pendingHistory || saveInFlight.current) {
+      toast.error('Finish the pending history save before stashing another track.');
+      return;
+    }
     try {
       if (options?.source === 'share-target') {
         sharedUrlRef.current = null;
@@ -346,55 +357,60 @@ export default function App() {
   };
   stashSubmitRef.current = handleStashSubmit;
 
+  const applySavedSong = (newSong: import('./types').Song) => {
+    setState(prev => ({ ...prev, history: [newSong, ...prev.history.filter(item => item.id !== newSong.id)],
+      currentMatches: [], currentUrl: '', showModal: false }));
+    setMoodBoardKey(prev => prev + 1);
+  };
+
   const handleSongSelection = async (song: SongMatch) => {
+    if (saveInFlight.current || pendingHistory) return;
+    saveInFlight.current = true;
     try {
-      setState((prev) => ({ ...prev, showModal: false }));
-      const source = extractSource(state.currentUrl);      const { song: newSong } = await api.addTrack(song, source);
-
-      setState((prev) => ({
-        ...prev,
-        history: [newSong, ...prev.history],
-        currentMatches: [],
-        currentUrl: '',
-      }));
-
-      // Refresh mood board with new song
-      setMoodBoardKey(prev => prev + 1);
-
-      toast.success(`"${song.song}" added to your library!`);
+      const result = await api.addTrack(song, extractSource(state.currentUrl), state.defaultPlaylistId);
+      applySavedSong(result.song);
+      toast.success(result.spotifySaved ? `Saved to ${result.playlistName} and Stash.` : 'Saved to Stash. No Spotify match was available.');
     } catch (error) {
-      logger.error('Failed to add track:', error);
-      toast.error('Failed to add song to library');
+      if (error instanceof HistorySaveError) {
+        setPendingHistory(error);
+        setState(prev => ({ ...prev, showModal: false }));
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Save could not be confirmed.');
+      }
+    } finally {
+      saveInFlight.current = false;
+    }
+  };
+
+  const retryHistoryOnly = async () => {
+    if (!pendingHistory || saveInFlight.current) return;
+    saveInFlight.current = true;
+    setRetryingHistory(true);
+    try {
+      applySavedSong(await api.saveHistory(pendingHistory.payload));
+      setPendingHistory(null);
+      toast.success('Stash history saved. Spotify was not changed again.');
+    } catch {
+      toast.error('History is still unconfirmed. Keep this page open and retry when connected.');
+    } finally {
+      saveInFlight.current = false;
+      setRetryingHistory(false);
     }
   };
 
   const handleDeleteSong = async (id: string) => {
+    if (deletesInFlight.current.has(id)) return;
+    deletesInFlight.current.add(id);
     try {
-      // Find the song to get its Spotify track ID
-      const song = state.history.find(s => s.id === id);
-
-      // Remove from Spotify first (if we have the track info)
-      if (song?.spotify_url) {
-        const trackId = song.spotify_url.split('/').pop()?.split('?')[0];
-        if (trackId) {
-          await api.removeFromSpotify(trackId, state.defaultPlaylistId);
-        }
-      }
-
-      // Then remove from Stash history
+      // History rows do not yet record their destination. Never guess from today's setting.
       await api.deleteSong(id);
-      setState((prev) => ({
-        ...prev,
-        history: prev.history.filter((song) => song.id !== id),
-      }));
-
-      // Refresh mood board after deletion
+      setState(prev => ({ ...prev, history: prev.history.filter(song => song.id !== id) }));
       setMoodBoardKey(prev => prev + 1);
-
-      toast.success('Song removed from Spotify and history');
+      toast.success('Removed from Stash history. Spotify was not changed.');
     } catch (error) {
-      logger.error('Failed to delete song:', error);
-      toast.error('Failed to delete song');
+      toast.error(error instanceof Error ? error.message : 'History removal could not be confirmed.');
+    } finally {
+      deletesInFlight.current.delete(id);
     }
   };
 
@@ -537,6 +553,17 @@ export default function App() {
     <ErrorBoundary>
       <div className="size-full">
         {renderView()}
+        {pendingHistory && state.isLoggedIn && (
+          <section role="alert" aria-label="History save needs attention"
+            className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-lg rounded-2xl border border-border bg-background p-5 shadow-xl">
+            <h2 className="font-bold">History save needs attention</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{pendingHistory.message} Keep this page open until history is confirmed. Reloading will lose this retry.</p>
+            <button onClick={retryHistoryOnly} disabled={retryingHistory}
+              className="mt-4 min-h-11 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-50">
+              {retryingHistory ? 'Saving history...' : 'Retry Stash history only'}
+            </button>
+          </section>
+        )}
 
         <ConfirmationModal
           isOpen={state.showModal}

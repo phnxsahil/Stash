@@ -1,6 +1,6 @@
 # Reviewed upgrade sequence
 
-Personal daily use first. Keep React/Vite, FastAPI and Supabase. Each round stops for review; do not implement a later round implicitly.
+Personal daily use first. Keep React/Vite, FastAPI and Supabase. Each round is a separate review batch. Later work can proceed on stacked branches under the requested full overhaul; merging, deployment, live migrations and infrastructure costs remain gated.
 
 1. Baseline types, existing test commands, deterministic unauthenticated smoke tests and this record.
 2. Truthful Spotify/Stash save and delete outcomes, chosen destination wiring, destination-specific removal and partial-failure recovery. No success message for an unverified external effect.
