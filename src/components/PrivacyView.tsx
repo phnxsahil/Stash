@@ -31,7 +31,7 @@ export function PrivacyView({ onBack }: PrivacyViewProps) {
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
         <div className="container mx-auto px-4 py-4 md:px-8">
           <div className="flex items-center gap-4">
-            <Button onClick={onBack} variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
+            <Button onClick={onBack} aria-label="Back to Stash" variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
