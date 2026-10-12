@@ -90,6 +90,7 @@ function extractSource(url: string): string {
 }
 
 export default function App() {
+  const [appTab, setAppTab] = useState<'capture' | 'library'>('capture');
   const [state, setState] = useState<AppState>(() => {
     const savedTheme = localStorage.getItem('stash-theme') as Theme | null;
     return createDefaultState(savedTheme || undefined);
@@ -99,6 +100,7 @@ export default function App() {
   const [moodBoardKey, setMoodBoardKey] = useState(0);
 
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState('');
   const sharedUrlRef = useRef<string | null>(null);
   const sharedSubmissionRef = useRef<string | null>(null);
   const stashSubmitRef = useRef<((url: string, options?: StashSubmitOptions) => Promise<void>) | null>(null);
@@ -258,12 +260,14 @@ export default function App() {
   }, [state.theme]);
 
   const loadHistory = async () => {
+    setHistoryError('');
     setState((prev) => ({ ...prev, isLoadingHistory: true }));
     try {
       const history = await api.getUserHistory();
       setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
     } catch (error) {
       logger.error('Failed to load history:', error);
+      setHistoryError('Your songs are safe. Check your connection and try again.');
       setState((prev) => ({ ...prev, isLoadingHistory: false }));
       toast.error('Failed to load history');
     }
@@ -281,6 +285,8 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
+      setHistoryError('');
+      setAppTab('capture');
       setState(createDefaultState(state.theme));
       toast.success('Logged out successfully');
     } catch (error) {
@@ -502,12 +508,18 @@ export default function App() {
       case 'app':
         return (
           <AppView
+            initialTab={appTab}
+            onTabChange={setAppTab}
             userName={state.userName}
             history={state.history}
             songsThisWeek={songsThisWeek}
             streak={streak}
             isLoadingHistory={state.isLoadingHistory}
+            historyError={historyError}
+            onRefreshHistory={loadHistory}
             autoAddTopMatch={state.autoAddTopMatch}
+            defaultPlaylistId={state.defaultPlaylistId}
+            playlists={state.playlists}
             theme={state.theme}
             onLogout={handleLogout}
             onStashSubmit={handleStashSubmit}

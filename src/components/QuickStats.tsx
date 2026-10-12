@@ -1,40 +1,31 @@
-import { Calendar, Music2, TrendingUp } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Flame } from 'lucide-react';
 
 interface QuickStatsProps {
   totalSongs: number;
   songsThisWeek: number;
   streak: number;
   onClick?: () => void;
+  isLoading?: boolean;
+  unavailable?: boolean;
 }
 
-export function QuickStats({ totalSongs, songsThisWeek, streak, onClick }: QuickStatsProps) {
-  const cards = [
-    { label: 'Total Stashed', value: totalSongs, icon: Music2, color: 'text-primary' },
-    { label: 'New This Week', value: songsThisWeek, icon: TrendingUp, color: 'text-sky-500' },
-    { label: 'Active Streak', value: streak, icon: Calendar, color: 'text-emerald-500' },
-  ];
-
-  return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-6" aria-label="Quick stats">
-      {cards.map((card) => {
-        const Icon = card.icon;
-        return (
-          <button
-            key={card.label}
-            type="button"
-            onClick={onClick}
-            className="surface-panel group flex items-center gap-4 p-4 text-left transition-all hover:scale-[1.02] active:scale-[0.98] outline-focus sm:block sm:p-5 sm:text-center md:p-6"
-          >
-            <div className={`grid h-12 w-12 place-items-center rounded-2xl border border-border/40 bg-card/50 shadow-sm transition-colors group-hover:border-primary/20 sm:mx-auto sm:mb-3 md:h-14 md:w-14 md:mb-4 ${card.color}`}>
-              <Icon className="w-6 h-6 md:w-7 md:h-7" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[1.65rem] font-bold tracking-tight sm:mb-1 md:text-4xl">{card.value}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground md:text-xs">{card.label}</p>
-            </div>
-          </button>
-        );
-      })}
-    </section>
-  );
+export function QuickStats({ totalSongs, songsThisWeek, streak, onClick, isLoading, unavailable }: QuickStatsProps) {
+  const reduced = useReducedMotion();
+  return <section className="library-stats" aria-label="Your stash stats">
+    {[{label:'Total stashed',value:totalSongs}, {label:'New this week',value:songsThisWeek}, {label:'Active streak',value:streak}].map(({label,value}, index) =>
+      <button key={label} type="button" onClick={onClick} disabled={isLoading || unavailable} aria-label={isLoading ? `Loading ${label}` : unavailable ? `${label} unavailable` : `${value} ${label}${index === 2 ? ' days' : ''}. Open statistics`}>
+        <div className="stat-value">
+          {isLoading ? <span className="capture-shimmer stat-skeleton" aria-hidden="true" /> : unavailable ? <span>—</span> : <>
+          {index === 2 && <motion.span key={`flame-${value}`} initial={false} animate={reduced ? {} : {scale:[1,1.2,1],rotate:[0,-8,0]}} transition={{duration:.45}}><Flame size={22} aria-hidden="true" /></motion.span>}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={value} initial={reduced ? false : {y:12,opacity:0}} animate={{y:0,opacity:1}} exit={reduced ? undefined : {y:-12,opacity:0}} transition={{duration:.25}}>{value}</motion.span>
+          </AnimatePresence>
+          {index === 2 && <small>{value === 1 ? 'day' : 'days'}</small>}
+          </>}
+        </div>
+        <span className="stat-label">{label}</span>
+      </button>
+    )}
+  </section>;
 }
