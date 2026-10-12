@@ -128,4 +128,4 @@ export function HistoryList({ history, onDeleteSong, isLoading = false, error, o
     </motion.div>
     {history.length > 0 && filtered.length > 0 && <p className="library-end"><Check size={14} aria-hidden="true" /> You’re all caught up. Go find something good.</p>}
   </section>;
-              }
+}
