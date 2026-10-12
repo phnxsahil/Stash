@@ -101,7 +101,7 @@ InstagramStoryCard.displayName = 'InstagramStoryCard';
 interface InstagramExportProps {
   totalSongs: number;
   genreData?: { name: string; value: number; color: string }[];
-  topArtists?: { name: string; image: string }[];
+  topArtists?: { name: string; art: string; count: number }[];
   streak?: number;
 }
 
