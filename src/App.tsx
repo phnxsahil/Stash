@@ -30,7 +30,7 @@ type StashSubmitOptions = {
 
 function getSharedUrlFromSearch(search: string): string | null {
   const params = new URLSearchParams(search);
-  const sharedUrlParam = params.get('url');
+  const sharedUrlParam = params.get('shared_url') || params.get('url');
   const sharedText = params.get('text') || params.get('title');
   const payload = sharedUrlParam || sharedText;
 
@@ -524,6 +524,10 @@ export default function App() {
         return (
           <LandingView
             onConnect={handleConnectSpotify}
+            onCapture={async (url) => {
+              queueSharedUrl(url);
+              await handleConnectSpotify();
+            }}
             theme={state.theme}
             onToggleTheme={handleToggleTheme}
             onNavigate={(page) => handleNavigate(page)}
