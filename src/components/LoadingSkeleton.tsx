@@ -6,7 +6,7 @@ interface LoadingSkeletonProps {
 }
 
 function SkeletonBlock({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-muted/80 ${className}`} />;
+  return <div className={`capture-shimmer rounded-2xl bg-muted/80 ${className}`} />;
 }
 
 export default function LoadingSkeleton({

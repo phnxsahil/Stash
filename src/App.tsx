@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import { AnimatePresence, motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
 import { ConfirmationModal } from './components/ConfirmationModal';
@@ -90,6 +91,7 @@ function extractSource(url: string): string {
 }
 
 export default function App() {
+  const reducedMotion = useReducedMotion();
   const [appTab, setAppTab] = useState<'capture' | 'library'>('capture');
   const [state, setState] = useState<AppState>(() => {
     const savedTheme = localStorage.getItem('stash-theme') as Theme | null;
@@ -551,8 +553,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="size-full">
-        {renderView()}
+      <MotionConfig reducedMotion="user">
+        <div className="size-full">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={state.currentView} initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reducedMotion ? undefined : { opacity: 0 }} transition={{ duration: 0.16 }}>
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
 
         <ConfirmationModal
           isOpen={state.showModal}
@@ -585,7 +592,8 @@ export default function App() {
         <PWARegistration />
 
         <Toaster position="bottom-right" theme={state.theme} />
-      </div>
+        </div>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }
