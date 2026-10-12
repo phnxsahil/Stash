@@ -45,7 +45,7 @@ function TrackCard({ song, index, onDeleteSong }: { song: Song; index: number; o
           <AlertDialog.Content className="capture-dialog capture-theme library-remove-dialog">
             <div className="capture-status-icon"><Disc3 size={36} /></div>
             <AlertDialog.Title>Remove this find?</AlertDialog.Title>
-            <AlertDialog.Description className="capture-dialog-description">“{song.song}” will leave your Stash history. If linked, it will also be removed from your Spotify destination.</AlertDialog.Description>
+            <AlertDialog.Description className="capture-dialog-description">“{song.song}” will leave your Stash history. Your Spotify library and playlists will stay unchanged.</AlertDialog.Description>
             <div className="remove-actions"><AlertDialog.Cancel className="library-secondary">Keep it</AlertDialog.Cancel>
               <AlertDialog.Action className="capture-primary" onClick={()=>onDeleteSong(song.id)}>Remove</AlertDialog.Action></div>
           </AlertDialog.Content>

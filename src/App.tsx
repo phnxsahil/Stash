@@ -11,6 +11,7 @@ import LoadingSkeleton from './components/LoadingSkeleton';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { api } from './lib/api';
+import { HistorySaveError } from './lib/saveOutcome';
 import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
 import { calculateStreak } from './lib/analytics';
@@ -98,6 +99,17 @@ export default function App() {
     return createDefaultState(savedTheme || undefined);
   });
 
+  const authOwner = useRef<string | null>(null);
+  const authRevision = useRef(0);
+  const historyRevision = useRef(0);
+  const themeRef = useRef(state.theme);
+  themeRef.current = state.theme;
+  const saveInFlight = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const deletesInFlight = useRef(new Set<string>());
+  const [pendingHistory, setPendingHistory] = useState<HistorySaveError | null>(null);
+  const [retryingHistory, setRetryingHistory] = useState(false);
+
   // Force mood board refresh when songs change
   const [moodBoardKey, setMoodBoardKey] = useState(0);
 
@@ -174,62 +186,60 @@ export default function App() {
       });
   }, [pendingSharedUrl, state.isLoggedIn, state.isProcessing]);
 
-  // Handle Auth Session
+  // Never await a Supabase API from inside its synchronous auth callback.
+  // Account transitions invalidate pending reads before their responses can apply.
   useEffect(() => {
-    const checkSession = async () => {
-      logger.log('🔐 Checking auth session...');
-      const { data: { session } } = await supabase.auth.getSession();
-      logger.log('🔐 Session:', session ? 'Found' : 'Not found');
-      if (session) {
-        handleAuthSuccess(session.user);
+    let alive = true;
+    let eventSeen = false;
+    const applySession = (session: import('@supabase/supabase-js').Session | null) => {
+      if (!alive) return;
+      const owner = session?.user.id || null;
+      const changed = owner !== authOwner.current;
+      const revision = ++authRevision.current;
+      historyRevision.current += 1;
+      authOwner.current = owner;
+      if (!session) {
+        setPendingHistory(null);
+        setHistoryError('');
+        setAppTab('capture');
+        setState(createDefaultState(themeRef.current));
+        return;
       }
+      if (changed) { setPendingHistory(null); setHistoryError(''); setAppTab('capture'); }
+      setState(prev => ({
+        ...(changed ? createDefaultState(prev.theme) : prev),
+        isLoggedIn: true,
+        hasSpotifyToken: !!session.provider_token,
+        userEmail: session.user.email || '',
+        userName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+        currentView: changed ? 'app' : prev.currentView,
+      }));
+      queueMicrotask(() => {
+        if (!alive || revision !== authRevision.current) return;
+        void loadHistory(owner!, revision);
+        void api.getUserPlaylists().then(playlists => {
+          if (alive && revision === authRevision.current && owner === authOwner.current) {
+            setState(prev => ({ ...prev, playlists }));
+          }
+        }).catch(error => {
+          if (alive && revision === authRevision.current) logger.warn('Playlists could not be loaded.', error);
+        });
+      });
     };
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        logger.log('🔐 Auth state changed:', event, session ? 'Session present' : 'No session');
-        if (session) {
-          handleAuthSuccess(session.user);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      eventSeen = true;
+      applySession(session);
+    });
+    void supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (alive && !eventSeen) applySession(error ? null : session);
+    }).catch(() => { if (alive && !eventSeen) applySession(null); });
+    return () => {
+      alive = false;
+      authRevision.current += 1;
+      historyRevision.current += 1;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const handleAuthSuccess = async (user: any) => {
-    logger.log('✅ Auth success! User:', user.email);
-    const token = await api.getSpotifyToken();
-
-    setState((prev) => ({
-      ...prev,
-      isLoggedIn: true,
-      hasSpotifyToken: !!token,
-      userEmail: user.email || '',
-      userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-      currentView: 'app',
-    }));
-    logger.log('✅ Redirecting to dashboard...');
-
-    try {
-      // Parallelize for speed and decoupling
-      logger.log('🔄 Fetching user data ecosystem...');
-      const results = await Promise.allSettled([
-        api.getUserPlaylists(),
-        loadHistory()
-      ]);
-
-      const [playlistsRes] = results;
-      if (playlistsRes.status === 'fulfilled') {
-        setState((prev) => ({ ...prev, playlists: playlistsRes.value }));
-      } else {
-        logger.warn("Auth: Playlists failed to load (Token might be expired):", playlistsRes.reason);
-      }
-    } catch (err) {
-      logger.error("Auth: Critical Failure in data ecosystem:", err);
-    }
-  };
 
   const streak = useMemo(() => calculateStreak(state.history), [state.history]);
 
@@ -240,13 +250,6 @@ export default function App() {
       return now - date.getTime() < SEVEN_DAYS_MS;
     }).length;
   }, [state.history]);
-
-  // Load history when user logs in
-  useEffect(() => {
-    if (state.isLoggedIn && state.history.length === 0) {
-      loadHistory();
-    }
-  }, [state.isLoggedIn]);
 
   // Apply theme to document and save to localStorage
   useEffect(() => {
@@ -261,17 +264,22 @@ export default function App() {
     localStorage.setItem('stash-theme', state.theme);
   }, [state.theme]);
 
-  const loadHistory = async () => {
+  const loadHistory = async (owner = authOwner.current, authAtStart = authRevision.current) => {
+    if (!owner) return;
     setHistoryError('');
-    setState((prev) => ({ ...prev, isLoadingHistory: true }));
+    const request = ++historyRevision.current;
+    const current = () => owner === authOwner.current && authAtStart === authRevision.current && request === historyRevision.current;
+    if (!current()) return;
+    setState(prev => ({ ...prev, isLoadingHistory: true }));
     try {
-      const history = await api.getUserHistory();
-      setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
+      const history = await api.getUserHistory(owner);
+      if (current()) setState(prev => ({ ...prev, history, isLoadingHistory: false }));
     } catch (error) {
+      if (!current()) return;
       logger.error('Failed to load history:', error);
-      setHistoryError('Your songs are safe. Check your connection and try again.');
-      setState((prev) => ({ ...prev, isLoadingHistory: false }));
-      toast.error('Failed to load history');
+      setState(prev => ({ ...prev, isLoadingHistory: false }));
+      setHistoryError('Your current history was kept. Check your connection and try again.');
+      toast.error('Failed to load history. Your current history was kept.');
     }
   };
 
@@ -287,6 +295,7 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
+      setPendingHistory(null);
       setHistoryError('');
       setAppTab('capture');
       setState(createDefaultState(state.theme));
@@ -298,6 +307,7 @@ export default function App() {
   }, [state.theme]);
 
   const handleStashSubmit = async (url: string, options?: StashSubmitOptions) => {
+    if (pendingHistory || saveInFlight.current) { toast.error('Finish the pending history save first.'); return; }
     try {
       if (options?.source === 'share-target') {
         sharedUrlRef.current = null;
@@ -354,55 +364,77 @@ export default function App() {
   };
   stashSubmitRef.current = handleStashSubmit;
 
+  const applySavedSong = (newSong: import('./types').Song) => {
+    historyRevision.current += 1;
+    setState(prev => ({ ...prev, isLoadingHistory: false, history: [newSong, ...prev.history.filter(item => item.id !== newSong.id)],
+      currentMatches: [], currentUrl: '', showModal: false }));
+    setMoodBoardKey(prev => prev + 1);
+  };
+
   const handleSongSelection = async (song: SongMatch) => {
+    const owner = authOwner.current;
+    if (!owner) return;
+    if (saveInFlight.current || pendingHistory) return;
+    saveInFlight.current = true;
+    setSaving(true);
     try {
-      setState((prev) => ({ ...prev, showModal: false }));
-      const source = extractSource(state.currentUrl);      const { song: newSong } = await api.addTrack(song, source);
-
-      setState((prev) => ({
-        ...prev,
-        history: [newSong, ...prev.history],
-        currentMatches: [],
-        currentUrl: '',
-      }));
-
-      // Refresh mood board with new song
-      setMoodBoardKey(prev => prev + 1);
-
-      toast.success(`"${song.song}" added to your library!`);
+      const result = await api.addTrack(song, extractSource(state.currentUrl), state.defaultPlaylistId);
+      if (owner !== authOwner.current) return;
+      applySavedSong(result.song);
+      toast.success(result.spotifySaved ? `Saved to ${result.playlistName} and Stash.` : 'Saved to Stash. No Spotify match was available.');
     } catch (error) {
-      logger.error('Failed to add track:', error);
-      toast.error('Failed to add song to library');
+      if (owner !== authOwner.current) return;
+      if (error instanceof HistorySaveError) {
+        setPendingHistory(error);
+        setState(prev => ({ ...prev, showModal: false }));
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Save could not be confirmed.');
+      }
+    } finally {
+      saveInFlight.current = false;
+      setSaving(false);
+    }
+  };
+
+  const retryHistoryOnly = async () => {
+    if (!pendingHistory || saveInFlight.current) return;
+    const owner = authOwner.current;
+    if (!owner || pendingHistory.payload.user_id !== owner) return;
+    saveInFlight.current = true;
+    setSaving(true);
+    setRetryingHistory(true);
+    try {
+      const saved = await api.saveHistory(pendingHistory.payload);
+      if (owner !== authOwner.current) return;
+      applySavedSong(saved);
+      setPendingHistory(null);
+      toast.success('Stash history saved. Spotify was not changed again.');
+    } catch {
+      toast.error('History is still unconfirmed. Keep this page open and retry when connected.');
+    } finally {
+      saveInFlight.current = false;
+      setSaving(false);
+      setRetryingHistory(false);
     }
   };
 
   const handleDeleteSong = async (id: string) => {
+    const owner = authOwner.current;
+    if (!owner) return;
+    if (deletesInFlight.current.has(id)) return;
+    deletesInFlight.current.add(id);
     try {
-      // Find the song to get its Spotify track ID
-      const song = state.history.find(s => s.id === id);
-
-      // Remove from Spotify first (if we have the track info)
-      if (song?.spotify_url) {
-        const trackId = song.spotify_url.split('/').pop()?.split('?')[0];
-        if (trackId) {
-          await api.removeFromSpotify(trackId, state.defaultPlaylistId);
-        }
-      }
-
-      // Then remove from Stash history
+      // History rows do not yet record their destination. Never guess from today's setting.
       await api.deleteSong(id);
-      setState((prev) => ({
-        ...prev,
-        history: prev.history.filter((song) => song.id !== id),
-      }));
-
-      // Refresh mood board after deletion
+      if (owner !== authOwner.current) return;
+      historyRevision.current += 1;
+      setState(prev => ({ ...prev, isLoadingHistory: false, history: prev.history.filter(song => song.id !== id) }));
       setMoodBoardKey(prev => prev + 1);
-
-      toast.success('Song removed from Spotify and history');
+      toast.success('Removed from Stash history. Spotify was not changed.');
     } catch (error) {
-      logger.error('Failed to delete song:', error);
-      toast.error('Failed to delete song');
+      toast.error(error instanceof Error ? error.message : 'History removal could not be confirmed.');
+    } finally {
+      deletesInFlight.current.delete(id);
     }
   };
 
@@ -588,8 +620,12 @@ export default function App() {
             handleStashSubmit(state.currentUrl);
           }}
         />
+        {pendingHistory && <aside role="alert" className="fixed bottom-24 left-4 right-4 z-50 rounded-xl border border-border bg-background p-4">
+          <p>{pendingHistory.message}</p>
+          <button className="min-h-11" disabled={saving} onClick={retryHistoryOnly}>{retryingHistory ? 'Saving history...' : 'Retry Stash history only'}</button>
+        </aside>}
         <PWAInstallPrompt />
-        <PWARegistration />
+        <PWARegistration busy={state.isProcessing || saving || !!pendingHistory} />
 
         <Toaster position="bottom-right" theme={state.theme} />
         </div>

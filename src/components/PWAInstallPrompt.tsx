@@ -101,11 +101,11 @@ export function PWAInstallPrompt() {
           <div className="flex-1 min-w-0">
             <div className="beta-chip mb-3">
               <Radio className="h-3.5 w-3.5" />
-              Native sharing
+              Home screen app
             </div>
             <h4 className="text-sm mb-1">Install Stash</h4>
             <p className="text-xs md:text-sm text-muted-foreground mb-3">
-              Add Stash to your home screen for faster launch, native sharing, and an app-style mobile shell.
+              Add Stash to your home screen for quick access. Share-menu support depends on your browser; you can always paste a link.
             </p>
             <div className="flex gap-2">
               <Button onClick={handleInstall} className="h-9 px-4 bg-primary text-primary-foreground hover:opacity-90 outline-focus">

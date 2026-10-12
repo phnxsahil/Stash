@@ -16,11 +16,12 @@ import yt_dlp
 import shutil
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from spotipy.oauth2 import SpotifyClientCredentials
 from shazamio import Shazam
 
 from api.config import settings
+from api.spotify_mutations import mutate_spotify
 
 # Configure module logger
 logger = logging.getLogger(__name__)
@@ -351,13 +352,13 @@ def search_spotify_strict(track: str, artist: str) -> dict:
 
 class SaveWebTrackRequest(BaseModel):
     token: str
-    track_id: str
+    track_id: str = Field(pattern=r"^[a-zA-Z0-9]{22}$")
     playlist_id: str
 
 class RemoveTrackRequest(BaseModel):
     token: str
-    track_id: str
-    playlist_id: str = "1"  # Default to liked songs
+    track_id: str = Field(pattern=r"^[a-zA-Z0-9]{22}$")
+    playlist_id: str  # Exact destination; never infer a default for removal
 
 # Helper: AI Genre Detection
 def detect_genre_with_gemini(track_name: str, artist_name: str) -> str:
@@ -453,7 +454,11 @@ def save_track_to_spotify(request: SaveWebTrackRequest) -> dict:
                 target_playlist_id = existing_id
                 logger.info("Found existing playlist: %s", playlist_name)
             else:
-                new_playlist = user_sp.user_playlist_create(user_id, playlist_name, public=False)
+                response = requests.post("https://api.spotify.com/v1/me/playlists",
+                    headers={"Authorization": f"Bearer {request.token}"},
+                    json={"name": playlist_name, "public": False}, timeout=(5, 20))
+                response.raise_for_status()
+                new_playlist = response.json()
                 target_playlist_id = new_playlist['id']
                 logger.info("Created new playlist: %s", playlist_name)
 
@@ -461,7 +466,7 @@ def save_track_to_spotify(request: SaveWebTrackRequest) -> dict:
         final_playlist_name = "Liked Songs"
         
         if target_playlist_id and target_playlist_id != '1':
-             user_sp.playlist_add_items(target_playlist_id, [f"spotify:track:{request.track_id}"])
+             mutate_spotify(request.token, request.track_id, target_playlist_id)
              
              # If it was Smart Sort, we already have the name
              if request.playlist_id == "smart_sort":
@@ -476,7 +481,7 @@ def save_track_to_spotify(request: SaveWebTrackRequest) -> dict:
                      
              logger.info("Added to playlist: %s (%s)", final_playlist_name, target_playlist_id)
         else:
-             user_sp.current_user_saved_tracks_add([request.track_id])
+             mutate_spotify(request.token, request.track_id, "1")
              logger.info("Added to Liked Songs")
 
         return {
@@ -486,40 +491,25 @@ def save_track_to_spotify(request: SaveWebTrackRequest) -> dict:
             "genre": genre 
         }
 
-    except Exception as e:
-        logger.error("Save Error: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+    except requests.HTTPError as error:
+        status = error.response.status_code if error.response is not None else 502
+        raise HTTPException(status_code=status, detail="Spotify save was not confirmed") from error
+    except spotipy.SpotifyException as error:
+        raise HTTPException(status_code=error.http_status or 502, detail="Spotify save was not confirmed") from error
+    except Exception as error:
+        logger.error("Spotify save not confirmed (%s)", type(error).__name__)
+        raise HTTPException(status_code=502, detail="Spotify save was not confirmed") from error
 
 @app.post("/remove_track")
 def remove_track_from_spotify(request: RemoveTrackRequest) -> dict:
-    """Remove track from Spotify library and/or playlist."""
-    logger.debug("Removing Track: %s from Playlist: %s", request.track_id, request.playlist_id)
-    
+    """Remove from the explicit destination only; propagate all failures."""
+    if not request.playlist_id or request.playlist_id == "smart_sort":
+        raise HTTPException(status_code=400, detail="An exact destination is required")
     try:
-        # Initialize User Context
-        user_sp = spotipy.Spotify(auth=request.token)
-        
-        # Always remove from Liked Songs
-        try:
-            user_sp.current_user_saved_tracks_delete([request.track_id])
-            logger.debug("Removed from Liked Songs")
-        except Exception as e:
-            # Song might not be in liked songs, that's okay
-            logger.debug("Not in Liked Songs: %s", e)
-        
-        # If playlist_id provided and not "1" (Liked Songs), also remove from that playlist
-        if request.playlist_id and request.playlist_id != '1' and request.playlist_id != 'smart_sort':
-            try:
-                user_sp.playlist_remove_all_occurrences_of_items(
-                    request.playlist_id, 
-                    [f"spotify:track:{request.track_id}"]
-                )
-                logger.debug("Removed from playlist: %s", request.playlist_id)
-            except Exception as e:
-                logger.debug("Playlist removal failed: %s", e)
-        
-        return {"success": True}
-    
-    except Exception as e:
-        logger.error("Remove Error: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        mutate_spotify(request.token, request.track_id, request.playlist_id, remove=True)
+        return {"success": True, "playlist_id": request.playlist_id}
+    except requests.HTTPError as error:
+        status = error.response.status_code if error.response is not None else 502
+        raise HTTPException(status_code=status, detail="Spotify removal was not confirmed") from error
+    except (requests.RequestException, ValueError) as error:
+        raise HTTPException(status_code=502, detail="Spotify removal was not confirmed") from error
