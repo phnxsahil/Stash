@@ -1,5 +1,4 @@
 .st-launch{position:fixed;inset:0;z-index:200;pointer-events:none}
 .st-launch-backdrop{position:absolute;inset:0;background:var(--st-surface)}
-.st-launch-mark{position:absolute;left:0;top:0;width:96px;height:96px;transform-origin:top left;transform:translate(calc((100vw - 96px)/2),calc((100dvh - 96px)/2 - 30px));will-change:transform}
-.st-launch-word{position:absolute;top:calc(50% + 38px);left:0;right:0;text-align:center;font:700 30px/1.2 var(--st-font);letter-spacing:-.05em;color:var(--st-text)}
+.st-launch-mark{position:absolute;left:0;top:0;width:96px;height:96px;transform-origin:top left;will-change:transform}
 @media(prefers-reduced-motion:reduce){.st-launch{display:none}}
