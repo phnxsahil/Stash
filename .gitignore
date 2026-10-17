@@ -16,6 +16,8 @@ build
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
+.mcp.json
 
 # Logs
 npm-debug.log*
@@ -49,3 +51,8 @@ __pycache__
 .cache
 instagram-cookies.local.txt
 .hf-space-sync/
+.secret*
+*.secret
+*.secret.*
+*.patch
+*.diff
