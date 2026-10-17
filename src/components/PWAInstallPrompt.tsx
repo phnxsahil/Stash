@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Radio, X } from './stitch/StashIcons';
 import { Button } from './ui/button';
+import { canShowInstallPrompt, isInstallPromptDismissed, isStandaloneDisplayMode } from '../lib/pwa';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -8,7 +9,6 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = 'stash-pwa-prompt-dismissed-at';
-const DISMISS_COOLDOWN_MS = 1000 * 60 * 60 * 24 * 3; // 3 days
 const SHARED_URL_STORAGE_KEY = 'stash-pending-shared-url';
 
 export function PWAInstallPrompt() {
@@ -18,8 +18,7 @@ export function PWAInstallPrompt() {
 
   const canShowPrompt = useMemo(() => {
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
-    if (!dismissedAt) return true;
-    return Date.now() - dismissedAt > DISMISS_COOLDOWN_MS;
+    return !isInstallPromptDismissed(dismissedAt);
   }, []);
 
   useEffect(() => {
@@ -46,10 +45,9 @@ export function PWAInstallPrompt() {
   }, [canShowPrompt]);
 
   useEffect(() => {
-    if (!deferredPrompt || !hasInteracted) return;
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if (new URLSearchParams(window.location.search).get('url')) return;
-    if (localStorage.getItem(SHARED_URL_STORAGE_KEY)) return;
+    const params = new URLSearchParams(window.location.search);
+    const hasPendingShare = Boolean(params.get('shared_url') || params.get('url') || params.get('text') || params.get('title') || localStorage.getItem(SHARED_URL_STORAGE_KEY));
+    if (!canShowInstallPrompt({ hasDeferredPrompt: !!deferredPrompt, hasInteracted, isStandalone: isStandaloneDisplayMode(), hasPendingShare })) return;
 
     const timer = window.setTimeout(() => {
       setShowPrompt(true);

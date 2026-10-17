@@ -16,6 +16,7 @@ import { api } from './lib/api';
 import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
 import { calculateStreak } from './lib/analytics';
+import { getSharedUrlFromSearch } from './lib/shareTarget';
 import type { AppState, ViewType, SongMatch, Theme } from './types';
 
 // Lazy-loaded views (only fetched when navigated to)
@@ -30,19 +31,6 @@ const SHARED_URL_STORAGE_KEY = 'stash-pending-shared-url';
 type StashSubmitOptions = {
   source?: 'manual' | 'share-target';
 };
-
-function getSharedUrlFromSearch(search: string): string | null {
-  const params = new URLSearchParams(search);
-  const sharedUrlParam = params.get('shared_url') || params.get('url');
-  const sharedText = params.get('text') || params.get('title');
-  const payload = sharedUrlParam || sharedText;
-
-  if (!payload) return null;
-
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const matches = payload.match(urlRegex);
-  return sharedUrlParam || (matches && matches[0]) || null;
-}
 
 function storeSharedUrl(url: string) {
   localStorage.setItem(SHARED_URL_STORAGE_KEY, url);
