@@ -4,7 +4,6 @@ import { HistoryList } from './HistoryList';
 import { QuickStats } from './QuickStats';
 import { Playlist, Song } from '../lib/api';
 import '../styles/library.css';
-import { StashBadge } from './stitch/StashUI';
 import { StashShell } from './stitch/StashShell';
 import { AchievementBanner } from './AchievementBanner';
 
@@ -46,7 +45,7 @@ export function AppView({initialTab = 'capture',onTabChange,userName,history,son
       <CapturePanel connected savedCapture={savedCapture} onSubmit={onStashSubmit} pendingSharedUrl={pendingSharedUrl} destinationName={destinationName} onChangeDestination={onOpenSettings} recentSong={history[0]} />
     </section>
     <section hidden={view !== 'library'} className="st-library-content" aria-label="Your library">
-      <header className="st-library-heading"><div><h1>Your library</h1><StashBadge connected={hasSpotifyToken}>{hasSpotifyToken ? 'Spotify connected' : 'Spotify disconnected'}</StashBadge></div><p>The songs you found. The ones you kept.</p></header>
+      <header className="st-library-heading"><div><h1>Your library</h1></div><p>The songs you found. The ones you kept.</p></header>
       <QuickStats totalSongs={history.length} songsThisWeek={songsThisWeek} streak={streak} onClick={onOpenStats} isLoading={isLoadingHistory && !history.length} unavailable={!!historyError && !history.length} />
       <HistoryList history={history} onDeleteSong={onDeleteSong} isLoading={isLoadingHistory} error={historyError} onRefresh={onRefreshHistory} onCapture={() => navigate('capture')} />
     </section>

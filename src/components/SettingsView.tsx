@@ -1,4 +1,4 @@
-import { ComingSoon, Icon, StashBadge, StashCard, StashRow } from './stitch/StashUI';
+import { ComingSoon, Icon, StashCard, StashRow } from './stitch/StashUI';
 import { StashShell, type StashDestination } from './stitch/StashShell';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -42,9 +42,9 @@ export function SettingsView({
   const supportNavigate = (view: string) => (window as any).onNavigate?.(view);
   return <StashShell active="settings" userName={userName} connected={hasSpotifyToken} theme={theme} onNavigate={destination => onNavigate ? onNavigate(destination) : destination === 'stats' ? onOpenStats() : onBack()} onToggleTheme={onToggleTheme} onLogout={onLogout} autoAddTopMatch={autoAddTopMatch} onToggleAutoAdd={onToggleAutoAdd}>
     <div className="st-settings-content">
-      <header className="st-settings-heading"><div><h1>Settings</h1><StashBadge connected={hasSpotifyToken}>{hasSpotifyToken ? 'Connected' : 'Reconnect'}</StashBadge></div><p>Preferences & sonic sync controls</p></header>
+      <header className="st-settings-heading"><div><h1>Settings</h1></div><p>Preferences & sonic sync controls</p></header>
       <section className="st-settings-group" aria-labelledby="settings-account"><h2 id="settings-account" className="st-label">Account</h2><StashCard>
-        <div className="st-settings-identity"><span className="st-avatar"><Icon name="person" size={24} /></span><div><div><strong>{userName}</strong><StashBadge connected={hasSpotifyToken}>{hasSpotifyToken ? 'Connected' : 'Disconnected'}</StashBadge></div><p>{userEmail}</p></div></div>
+        <div className="st-settings-identity"><span className="st-avatar"><Icon name="person" size={24} /></span><div><div><strong>{userName}</strong></div><p>{userEmail}</p></div></div>
         <button className="st-settings-row-button" onClick={onReconnectSpotify}><StashRow icon="switch_account" title="Reconnect Spotify" description="Connect your Spotify profile" trailing={<Icon name="chevron_right" size={20} />} /></button>
         <button className="st-settings-row-button st-danger" onClick={onLogout}><StashRow icon="logout" title="Sign Out" description="Sign out of your Stash account" trailing={<Icon name="chevron_right" size={20} />} /></button>
       </StashCard></section>
