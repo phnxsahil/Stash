@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 const STATIC_CACHE = `stash-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `stash-runtime-${CACHE_VERSION}`;
 const IS_LOCALHOST =

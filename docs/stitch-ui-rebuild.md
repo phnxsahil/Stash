@@ -74,3 +74,8 @@ node node_modules/@playwright/test/cli.js test --config artifacts/stitch.playwri
 Live Spotify authentication, recognition, and saves were not exercised; this is
 a UI change and those existing handlers were preserved. Real content naturally
 differs from the export's illustrative account, track list, and metrics.
+# Approved logo update
+
+The selected identity is the original Hidden S: an S cut through a bookmark, in flat #1DB954. The shared logo, favicon, offline screen, export preview, and PWA icons use this mark. The maskable icon keeps the mark within the central safe area.
+
+On a fresh app mount, the S draws before the mark travels into the visible header. The entrance finishes after 1.32 seconds, runs alongside authentication/data loading, and does not replay during screen navigation. Reduced motion skips it; Escape or a pointer press dismisses it immediately. No timers delay API calls or alter application state.

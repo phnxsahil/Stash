@@ -7,6 +7,7 @@ import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { StashLaunch } from './components/stitch/StashLaunch';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
@@ -606,6 +607,7 @@ export default function App() {
         />
         <PWAInstallPrompt />
         <PWARegistration />
+        <StashLaunch />
 
         <Toaster position="bottom-right" theme={state.theme} />
         </div>
