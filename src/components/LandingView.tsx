@@ -1,5 +1,5 @@
 import { Icon, StashLogo } from './stitch/StashUI';
-import { ArrowUpRight, AudioLines } from './stitch/StashIcons';
+import { ArrowUpRight } from './stitch/StashIcons';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CapturePanel, CaptureFlow } from './CapturePanel';
 import '../styles/capture.css';
@@ -33,7 +33,7 @@ export function LandingView({ onConnect, onCapture, onNavigate, pendingSharedUrl
         <CapturePanel onSubmit={onCapture} pendingSharedUrl={pendingSharedUrl} />
         <div id="how-it-works"><CaptureFlow /></div>
         <motion.section className="landing-closer" initial={reduced ? false : {opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.3}} transition={{duration:.6}}>
-          <div className="closer-grooves" aria-hidden="true"><AudioLines /></div>
+          <div className="closer-grooves" aria-hidden="true" />
           <p className="capture-eyebrow">DON’T LET THE GOOD ONES GET AWAY.</p>
           <h2>A fleeting clip.<br /><span>A forever favorite.</span></h2>
           <p>Your next favorite song is hiding in your feed.<br />Give it a place in your playlist.</p>

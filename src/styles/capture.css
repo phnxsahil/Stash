@@ -208,7 +208,7 @@
 .landing-closer h2 span { color:#1db954; }
 .landing-closer > p:not(.capture-eyebrow) { position:relative; font-size:14px; line-height:1.8; color:#b3b3b3; margin-bottom:28px; }
 .landing-final-action { position:relative; display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:48px; padding:0 24px; border:1px solid #454545; background:#181818; color:#fff; border-radius:999px; font-weight:700; font-size:12px; }
-.closer-grooves { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:540px; height:540px; border-radius:50%; background:repeating-radial-gradient(circle,transparent 0 24px,#ffffff04 25px 26px); display:grid; place-items:center; }
+.closer-grooves { position:absolute; left:50%; top:16px; width:min(540px,calc(100% - 32px)); height:calc(100% - 32px); transform:translateX(-50%); border-radius:50%; background:repeating-radial-gradient(circle,transparent 0 24px,#ffffff04 25px 26px); pointer-events:none; }
 .closer-grooves svg { display:none; }
 .stash-landing .capture-beta { margin:36px 0; }
 @media (max-width:900px) and (min-width:641px) {
@@ -256,7 +256,7 @@
   .landing-closer h2 { font-size:35px; }
   .landing-closer > p:not(.capture-eyebrow) { font-size:12px; }
   .landing-closer .capture-eyebrow { font-size:7px; }
-  .closer-grooves { width:370px; height:370px; }
+  .closer-grooves { top:12px; width:calc(100% - 24px); height:calc(100% - 24px); }
 }
 @media (max-width:360px) {
   .stash-landing .capture-intro { grid-template-columns:minmax(0,1fr) 112px; gap:8px; }
@@ -275,5 +275,41 @@
   .landing-closer h2 { font-size:30px; }
 }
 .record-package { overflow:clip; }
+.stash-landing .flow-marker { background:transparent !important; border:0; }
+.stash-landing .flow-marker > .stash-icon { background:transparent; }
+
+@media (min-width:901px) {
+  .record-package { overflow:visible; }
+  .landing-closer { padding-block:120px; }
+  .closer-grooves { top:50%; width:540px; height:540px; transform:translate(-50%,-50%); }
+}
+
+@media (min-width:1600px) {
+  .stash-landing .capture-header,
+  .stash-landing .landing-workspace,
+  .stash-landing .capture-footer { max-width:1280px; }
+  .stash-landing .landing-workspace { padding-top:64px; }
+  .stash-landing .capture-intro { grid-template-columns:minmax(0,1fr) 500px; gap:64px; }
+  .stash-landing .capture-copy h1 { font-size:clamp(72px,6.4vw,116px); }
+  .record-package { width:500px; }
+  .record-package-inner, .record-sleeve { width:370px; height:370px; }
+  .sleeve-disc { width:342px; }
+  .sleeve-title { font-size:68px; }
+  .sleeve-caption { width:478px; }
+}
+
+@media (min-width:2200px) {
+  .stash-landing .capture-header,
+  .stash-landing .landing-workspace,
+  .stash-landing .capture-footer { max-width:1440px; }
+  .stash-landing .landing-workspace { padding-top:72px; }
+  .stash-landing .capture-intro { grid-template-columns:minmax(0,1fr) 560px; gap:72px; }
+  .stash-landing .capture-copy h1 { font-size:clamp(84px,5.8vw,132px); }
+  .record-package { width:560px; }
+  .record-package-inner, .record-sleeve { width:410px; height:410px; }
+  .sleeve-disc { width:380px; }
+  .sleeve-title { font-size:76px; }
+  .sleeve-caption { width:526px; }
+}
 .confirmation-dialog > button:last-child { min-width:44px; min-height:44px; display:grid; place-items:center; }
 .app-account-sheet > button:last-child { min-width:44px; min-height:44px; display:grid; place-items:center; }
