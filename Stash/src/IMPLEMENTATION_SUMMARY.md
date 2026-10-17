@@ -78,7 +78,7 @@ App.tsx (Root State Management)
 | Feature | Component | Description |
 |---------|-----------|-------------|
 | **Spotify OAuth** | App.tsx | Secure authentication with PKCE flow |
-| **URL Stashing** | AppView.tsx | Paste links from YouTube, TikTok, Instagram, etc. |
+| **URL Stashing** | AppView.tsx | Paste links from YouTube, Instagram, etc. |
 | **AI Song Matching** | Backend | Audio fingerprinting for perfect matches |
 | **Preview Player** | ConfirmationModal.tsx | 30-second previews with progress bar |
 | **Auto-Add Mode** | AppView.tsx | Skip preview and auto-save top match |

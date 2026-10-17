@@ -44,7 +44,7 @@ Use this checklist before deploying Stash to production.
 ## Functionality
 
 - [ ] Login with Spotify works
-- [ ] Song recognition works (test with Instagram/TikTok/YouTube)
+- [ ] Song recognition works (test with Instagram/YouTube)
 - [ ] Songs save to Spotify library
 - [ ] History loads correctly
 - [ ] Settings persist across sessions

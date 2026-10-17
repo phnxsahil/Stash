@@ -18,7 +18,7 @@ const params = new URLSearchParams(location.search);
 const songs: Song[] = [
   { id: 'fixture-1', song: 'Strangers', artist: 'Kenya Grace', source: 'Instagram', album_art_url: '', spotify_url: 'https://open.spotify.com/track/fixture', created_at: new Date(Date.now() - 120000).toISOString(), genre: 'Electronic' },
   { id: 'fixture-2', song: 'Birds of a Feather', artist: 'Billie Eilish', source: 'YouTube', album_art_url: '', created_at: new Date(Date.now() - 10800000).toISOString(), genre: 'Pop' },
-  { id: 'fixture-3', song: 'A long song title that needs to fit safely inside a narrow screen', artist: 'A very long artist name and collaborators', source: 'TikTok', album_art_url: '', created_at: new Date(Date.now() - 86400000).toISOString() },
+  { id: 'fixture-3', song: 'A long song title that needs to fit safely inside a narrow screen', artist: 'A very long artist name and collaborators', source: 'YouTube', album_art_url: '', created_at: new Date(Date.now() - 86400000).toISOString() },
 ];
 function Preview() {
   const [theme, setTheme] = useState<'light' | 'dark'>(params.get('theme') === 'light' ? 'light' : 'dark');

@@ -8,11 +8,11 @@
 
 **Tagline**: *"The internet is the world's radio. It just needs a save button."*
 
-**Purpose**: Stash lets users discover music anywhere on the internet (Instagram Reels, TikTok, YouTube, etc.), paste the link, and instantly save it to their Spotify library.
+**Purpose**: Stash lets users discover music anywhere on the internet (Instagram Reels, YouTube, etc.), paste the link, and instantly save it to their Spotify library.
 
 **User Flow**:
 ```
-1. Hear a song on Instagram/TikTok/YouTube
+1. Hear a song on Instagram/YouTube
 2. Copy the link
 3. Paste into Stash
 4. ProcessingOverlay shows (3 stages)
@@ -402,7 +402,7 @@ Bug Reports: <5 per week
 - ✅ PWA (no app install required)
 - ✅ Modern glass morphism design
 - ✅ Social features (planned)
-- ✅ Cross-platform (Instagram, TikTok, YouTube)
+- ✅ Cross-platform (Instagram, YouTube)
 
 ### vs Spotify's Built-in Features
 - ✅ Works with ANY platform

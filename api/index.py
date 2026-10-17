@@ -16,7 +16,7 @@ import yt_dlp
 import shutil
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from spotipy.oauth2 import SpotifyClientCredentials
 from shazamio import Shazam
 
@@ -84,6 +84,20 @@ app.add_middleware(
 class ReelRequest(BaseModel):
     url: str
 
+    @validator("url")
+    def validate_social_url(cls, value: str) -> str:
+        from urllib.parse import urlparse
+
+        normalized = value.strip()
+        parsed = urlparse(normalized)
+        host = (parsed.hostname or "").lower().rstrip(".")
+        allowed_hosts = ("instagram.com", "youtube.com", "youtu.be")
+        if parsed.scheme not in {"http", "https"} or not any(
+            host == domain or host.endswith(f".{domain}") for domain in allowed_hosts
+        ):
+            raise ValueError("Enter a valid Instagram or YouTube link")
+        return normalized
+
 @app.get("/")
 @app.head("/")
 def health_check():
@@ -132,7 +146,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
     audio_filename = await loop.run_in_executor(None, download_audio, req.url)
     if not audio_filename:
         # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
-        raise HTTPException(status_code=422, detail="Could not download audio. Instagram/TikTok might be blocking the request. Try a different link.")
+        raise HTTPException(status_code=422, detail="Could not download audio. Instagram might be blocking the request. Try a different link.")
 
     try:
         # 2. ASK SHAZAM (Audio Fingerprinting) with Retry Logic
@@ -246,7 +260,7 @@ def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]
                 platform_name = "Instagram"
                 cookie_file = '/tmp/instagram_cookies.txt'
             elif settings.YTDLP_COOKIES_INSTAGRAM:
-                # Fallback to Instagram cookies for other platforms (TikTok, etc.)
+                # Fallback to Instagram cookies for other platforms (other supported sources)
                 cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
                 platform_name = "General"
                 cookie_file = '/tmp/cookies.txt'

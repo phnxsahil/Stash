@@ -31,7 +31,7 @@ const mockSongs: Song[] = [
     id: '2',
     song: 'levitating',
     artist: 'Dua Lipa',
-    source: 'TikTok',
+    source: 'YouTube',
     album_art_url: 'https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a',
   },
   {

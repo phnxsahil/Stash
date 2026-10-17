@@ -1,4 +1,4 @@
-import { StashLogo } from './stitch/StashUI';
+import { Icon, StashLogo } from './stitch/StashUI';
 import { ArrowUpRight, AudioLines } from './stitch/StashIcons';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CapturePanel, CaptureFlow } from './CapturePanel';
@@ -13,7 +13,7 @@ interface LandingViewProps {
   pendingSharedUrl?: string | null;
 }
 
-export function LandingView({ onConnect, onCapture, onNavigate, pendingSharedUrl }: LandingViewProps) {
+export function LandingView({ onConnect, onCapture, onNavigate, pendingSharedUrl, theme, onToggleTheme }: LandingViewProps) {
   const reduced = useReducedMotion();
   const focusCapture = () => {
     const input = document.querySelector<HTMLInputElement>('.stash-landing .capture-input-row input');
@@ -27,7 +27,7 @@ export function LandingView({ onConnect, onCapture, onNavigate, pendingSharedUrl
         <a className="capture-brand" href="#main-content" aria-label="Stash home">
           <StashLogo />
         </a>
-        <div className="landing-header-actions"><a href="#how-it-works">How it works</a><button className="capture-connect" onClick={onConnect}>Connect Spotify <ArrowUpRight size={16} aria-hidden="true" /></button></div>
+        <div className="landing-header-actions"><a href="#how-it-works">How it works</a><button type="button" className="st-landing-theme" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={() => onToggleTheme(theme === 'dark' ? 'light' : 'dark')}><Icon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={18} /></button><button className="capture-connect" onClick={onConnect}>Connect Spotify <ArrowUpRight size={16} aria-hidden="true" /></button></div>
       </header>
       <main id="main-content" className="landing-workspace">
         <CapturePanel onSubmit={onCapture} pendingSharedUrl={pendingSharedUrl} />

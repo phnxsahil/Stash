@@ -52,7 +52,7 @@ export function AboutView({ onBack, theme }: AboutViewProps) {
           <section className="glass-card rounded-2xl p-8 shadow-lg">
             <h2 className="mb-4" style={{ fontWeight: 600 }}>Our Mission</h2>
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Stash is designed to solve a universal problem: discovering amazing music across the internet but struggling to save it to your music library. Whether you find a song on YouTube, TikTok, Instagram, or any website, Stash makes it effortless to add it to your Spotify collection instantly.
+              Stash is designed to solve a universal problem: discovering amazing music across the internet but struggling to save it to your music library. Whether you find a song on YouTube, Instagram, or any website, Stash makes it effortless to add it to your Spotify collection instantly.
             </p>
           </section>
 
@@ -95,7 +95,7 @@ export function AboutView({ onBack, theme }: AboutViewProps) {
             <div className="space-y-4 text-gray-600 dark:text-gray-400 leading-relaxed">
               <div>
                 <strong className="text-gray-900 dark:text-white">1. Find Music Anywhere</strong>
-                <p>Discover songs on YouTube, TikTok, Instagram, or any website.</p>
+                <p>Discover songs on YouTube, Instagram, or any website.</p>
               </div>
               <div>
                 <strong className="text-gray-900 dark:text-white">2. Paste the Link</strong>

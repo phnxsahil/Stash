@@ -13,7 +13,7 @@ const now=Date.now();
 const seed:Song[] = [
  {id:'1',song:'Night Drive',artist:'The Midnight Hours',source:'Instagram',created_at:new Date(now).toISOString(),album_art_url:artwork('NIGHT DRIVE','#633c42',0),spotify_url:'https://open.spotify.com/track/demo1'},
  {id:'2',song:'A song with a wonderfully long title that should stay readable',artist:'An artist with an equally long name',source:'YouTube',created_at:new Date(now-86400000).toISOString(),album_art_url:artwork('AFTER HOURS','#284b4c',1),spotify_url:'https://open.spotify.com/track/demo2'},
- {id:'3',song:'Slow Sunday',artist:'Mellow Company',source:'TikTok',created_at:new Date(now-2*86400000).toISOString(),album_art_url:'',spotify_url:'https://open.spotify.com/track/demo3'},
+ {id:'3',song:'Slow Sunday',artist:'Mellow Company',source: 'YouTube',created_at:new Date(now-2*86400000).toISOString(),album_art_url:'',spotify_url:'https://open.spotify.com/track/demo3'},
  {id:'4',song:'Golden Hour',artist:'Paper Planes',source:'Instagram',created_at:new Date(now-3*86400000).toISOString(),album_art_url:artwork('GOLDEN HOUR','#9b783c',0),spotify_url:'https://open.spotify.com/track/demo4'},
  {id:'5',song:'Somewhere, Soon',artist:'Open Windows',source:'YouTube',created_at:new Date(now-8*86400000).toISOString(),album_art_url:artwork('SOMEWHERE','#40456c',1)},
  {id:'6',song:'Lost in the Light',artist:'Soft Signal',source:'Instagram',created_at:'invalid-date',album_art_url:'/missing-demo-art.jpg',spotify_url:'https://open.spotify.com/track/demo6'},

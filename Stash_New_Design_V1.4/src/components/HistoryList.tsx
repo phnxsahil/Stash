@@ -51,8 +51,6 @@ export function HistoryList({ history, onDeleteSong, isLoading }: HistoryListPro
     switch (source.toLowerCase()) {
       case 'youtube':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'tiktok':
-        return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
       case 'instagram':
         return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
       case 'twitter':

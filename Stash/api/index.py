@@ -95,7 +95,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
     audio_filename = download_audio(req.url)
     if not audio_filename:
         # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
-        raise HTTPException(status_code=422, detail="Could not download audio. Instagram/TikTok might be blocking the request. Try a different link.")
+        raise HTTPException(status_code=422, detail="Could not download audio. Instagram might be blocking the request. Try a different link.")
 
     try:
         # 2. ASK SHAZAM (Audio Fingerprinting) with Retry Logic
@@ -215,7 +215,7 @@ def _download_with_options(url, use_cookies=False):
                 platform_name = "Instagram"
                 cookie_file = '/tmp/instagram_cookies.txt'
             elif settings.YTDLP_COOKIES_INSTAGRAM:
-                # Fallback to Instagram cookies for other platforms (TikTok, etc.)
+                # Fallback to Instagram cookies for other platforms (other supported sources)
                 cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
                 platform_name = "General"
                 cookie_file = '/tmp/cookies.txt'

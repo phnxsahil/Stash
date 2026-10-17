@@ -113,19 +113,19 @@ export function HelpView({ onBack }: HelpViewProps) {
               <div>
                 <h3 className="font-semibold">How do I save a song?</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  In Instagram, tap Share and choose Stash. Once Spotify is connected, Stash finds the song and adds it to your library. You can also paste a copied link.
+                  On Android, install Stash, then share an Instagram or YouTube link to it from the share sheet. Once Spotify is connected, Stash finds the song and saves it. On iPhone, copy the link, open Stash, and paste it.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold">What if Stash is missing from Instagram’s share sheet?</h3>
+                <h3 className="font-semibold">Can I share directly to Stash on iPhone?</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Incoming app sharing depends on browser support. Choose Copy link in Instagram, return to Stash, and tap Paste &amp; stash. Stash keeps a shared link while it is working, so a brief app switch won’t discard it.
+                  Share-sheet stashing is available on Android with a supported browser and the installed Stash app. iOS web apps cannot receive links from the share sheet. On iPhone, choose Copy link in Instagram or YouTube, open Stash, and tap Paste.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold">What platforms are supported?</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Stash accepts Instagram, YouTube, and TikTok links. Private posts may not be available to the recognition service.
+                  Stash accepts Instagram and YouTube links. Private posts may not be available to the recognition service.
                 </p>
               </div>
               <div>

@@ -1,7 +1,7 @@
 # Stash MVP - Implementation Checklist
 
 ## Project Overview
-**Stash** is a music discovery app that lets users save songs from anywhere on the internet (YouTube, TikTok, Instagram, etc.) directly to their Spotify library. This is a fully interactive prototype with a simulated backend.
+**Stash** is a music discovery app that lets users save songs from anywhere on the internet (YouTube, Instagram, etc.) directly to their Spotify library. This is a fully interactive prototype with a simulated backend.
 
 **Project Lead:** Sahil Sharma
 

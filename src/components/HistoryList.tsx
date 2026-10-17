@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useMotionValue, useReducedMotion } from 'frame
 import { Icon, relativeStashDate } from './stitch/StashUI';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Song } from '../lib/api';
+import { isSupportedSource } from '../lib/sources';
 import { TrackArtwork } from './TrackArtwork';
 
 interface HistoryListProps {
@@ -15,7 +16,7 @@ interface HistoryListProps {
 }
 
 const sourceLabel = (source: string) => (({ Instagram: 'Reels', YouTube: 'Shorts' } as Record<string, string>)[source] || source || 'Link');
-const sourceIcon = (source: string) => (({ Instagram: 'photo_camera', YouTube: 'smart_display', TikTok: 'music_note' } as Record<string, string>)[source] || 'link');
+const sourceIcon = (source: string) => (({ Instagram: 'photo_camera', YouTube: 'smart_display' } as Record<string, string>)[source] || 'link');
 
 function stashDate(value?: string) {
   const date = value ? new Date(value) : null;
@@ -37,7 +38,7 @@ function TrackCard({ song, index, onDeleteSong }: { song: Song; index: number; o
     <TrackArtwork url={song.album_art_url} />
     <div className="st-track-details">
       <h3 title={song.song}>{song.song}</h3><p title={song.artist}>{song.artist}</p>
-      <div className="st-track-meta"><span className={`st-source-badge st-source-${(song.source || 'link').toLowerCase()}`}><Icon name={sourceIcon(song.source)} size={11} />{sourceLabel(song.source)}</span><span aria-hidden="true">·</span><time dateTime={song.created_at} title={date.full}>{relativeStashDate(song.created_at) || date.label}</time></div>
+      <div className="st-track-meta">{isSupportedSource(song.source) && <><span className={`st-source-badge st-source-${(song.source || 'link').toLowerCase()}`}><Icon name={sourceIcon(song.source)} size={11} />{sourceLabel(song.source)}</span><span aria-hidden="true">·</span></>}<time dateTime={song.created_at} title={date.full}>{relativeStashDate(song.created_at) || date.label}</time></div>
     </div>
     <div className="st-track-actions">
       {spotifyUrl && <a href={spotifyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${song.song} in Spotify`}><Icon name="open_in_new" size={19} aria-hidden="true" /></a>}
@@ -70,7 +71,7 @@ export function HistoryList({ history, onDeleteSong, isLoading = false, error, o
   const pull = useMotionValue(0);
   const reduced = useReducedMotion();
   const id = useId();
-  const sources = useMemo(()=>Array.from(new Set(history.map(song=>song.source).filter(Boolean))).sort(),[history]);
+  const sources = useMemo(()=>Array.from(new Set(history.map(song=>song.source).filter(isSupportedSource))).sort(),[history]);
   useEffect(()=>{if(source !== 'All sources' && !sources.includes(source)) setSource('All sources');},[sources,source]);
   const filtered = useMemo(()=>history.filter(song => `${song.song} ${song.artist}`.toLowerCase().includes(query.trim().toLowerCase()) && (source === 'All sources' || source === song.source))
     .sort((a,b)=>sort === 'title' ? a.song.localeCompare(b.song) : (sort === 'oldest' ? 1 : -1) * ((Date.parse(a.created_at || '') || 0) - (Date.parse(b.created_at || '') || 0))),[history,query,source,sort]);
@@ -115,7 +116,7 @@ export function HistoryList({ history, onDeleteSong, isLoading = false, error, o
         {query && <button aria-label="Clear search" onClick={() => setQuery('')}><Icon name="close" size={14} /></button>}
       </div>
       <div className="st-library-filters"><div className="st-source-filters" role="group" aria-label="Filter by source">
-        {['All sources', ...sources.slice().sort((a, b) => { const order = ['Instagram', 'YouTube', 'TikTok']; return (order.includes(a) ? order.indexOf(a) : 99) - (order.includes(b) ? order.indexOf(b) : 99); })].map(item => <button key={item} aria-pressed={source === item} onClick={() => setSource(item)}>{item !== 'All sources' && <Icon name={sourceIcon(item)} size={15} />}{item === 'All sources' ? 'All' : sourceLabel(item)}</button>)}
+        {['All sources', ...sources.slice().sort((a, b) => { const order = ['Instagram', 'YouTube']; return (order.includes(a) ? order.indexOf(a) : 99) - (order.includes(b) ? order.indexOf(b) : 99); })].map(item => <button key={item} aria-pressed={source === item} onClick={() => setSource(item)}>{item !== 'All sources' && <Icon name={sourceIcon(item)} size={15} />}{item === 'All sources' ? 'All' : sourceLabel(item)}</button>)}
       </div><div className="st-library-sort"><label><Icon name="swap_vert" size={16} /><select aria-label="Sort stash" value={sort} onChange={event => setSort(event.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Song title</option></select></label>
         {onRefresh && <button aria-label="Refresh stash" onClick={() => void refreshRef.current()} disabled={refreshing || isLoading}><Icon name="sync" size={18} className={refreshing ? 'st-spin' : ''} /></button>}
       </div></div>

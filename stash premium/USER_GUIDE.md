@@ -40,7 +40,7 @@ When you first open Stash, you'll see:
 - **Logout Button** - Return to landing page
 
 #### Stash Form
-- **URL Input Field** - Paste any link from YouTube, TikTok, Instagram, etc.
+- **URL Input Field** - Paste any link from YouTube, Instagram, etc.
 - **Stash Button** - Submit the link for processing
 - **Loading State** - Animated spinner appears during processing
 
@@ -52,7 +52,7 @@ When you first open Stash, you'll see:
 - Each item shows:
   - Album artwork
   - Song title and artist
-  - Source platform (YouTube, TikTok, etc.)
+  - Source platform (YouTube, etc.)
   - Share button (disabled - future feature)
   - Delete button (appears on hover)
 
@@ -63,7 +63,6 @@ When you first open Stash, you'll see:
 ### Step 1: Find a Song
 Imagine you found a great song on:
 - YouTube
-- TikTok
 - Instagram Reels
 - Twitter/X
 - Any other platform

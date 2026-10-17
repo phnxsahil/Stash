@@ -8,6 +8,18 @@ beforeAll(() => {
 });
 
 describe('Capture interactions', () => {
+  it('clears the saved URL but preserves a newer draft', () => {
+    const submit = vi.fn();
+    const { rerender } = render(<CapturePanel connected onSubmit={submit} />);
+    const input = screen.getByRole('textbox', { name: 'Music source URL' });
+    fireEvent.change(input, { target: { value: 'https://youtu.be/saved' } });
+    rerender(<CapturePanel connected onSubmit={submit} savedCapture={{ url: 'https://youtu.be/saved', version: 1 }} />);
+    expect(input).toHaveValue('');
+    fireEvent.change(input, { target: { value: 'https://youtu.be/new-draft' } });
+    rerender(<CapturePanel connected onSubmit={submit} savedCapture={{ url: 'https://youtu.be/saved', version: 2 }} />);
+    expect(input).toHaveValue('https://youtu.be/new-draft');
+  });
+
   it('submits once while busy and retains the link if submission fails', async () => {
     let rejectRequest!: (error: Error) => void;
     const submit = vi.fn(() => new Promise<void>((_, reject) => { rejectRequest = reject; }));

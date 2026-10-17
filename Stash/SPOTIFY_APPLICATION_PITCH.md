@@ -10,7 +10,7 @@ Use this content when filling out the **Quota Extension Request** form in the Sp
 ## 1. App Description & Use Case
 **Question:** What does your app do?
 **Draft:**
-Stash is a productivity tool for music discovery that bridges the gap between social media platforms (Instagram, TikTok, YouTube) and the Spotify ecosystem. It allows users to instantly identify music from social media links and "stash" them directly into their Spotify library or genre-specific playlists. By streamlining the path from "social discovery" to "Spotify saving," Stash increases user engagement and listenership within Spotify, preventing discovered tracks from being forgotten.
+Stash is a productivity tool for music discovery that bridges the gap between social media platforms (Instagram, YouTube) and the Spotify ecosystem. It allows users to instantly identify music from social media links and "stash" them directly into their Spotify library or genre-specific playlists. By streamlining the path from "social discovery" to "Spotify saving," Stash increases user engagement and listenership within Spotify, preventing discovered tracks from being forgotten.
 
 ## 2. Value to Spotify Ecosystem
 **Question:** How does this benefit Spotify and its users?

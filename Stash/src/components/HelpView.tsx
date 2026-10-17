@@ -122,13 +122,13 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
               <div>
                 <h3 className="mb-2" style={{ fontWeight: 600 }}>How do I save a song?</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Simply paste any music link (YouTube, TikTok, Instagram, etc.) into the input field and click Stash. We'll find the song and add it to your Spotify library!
+                  Simply paste any music link (YouTube, Instagram, etc.) into the input field and click Stash. We'll find the song and add it to your Spotify library!
                 </p>
               </div>
               <div>
                 <h3 className="mb-2" style={{ fontWeight: 600 }}>What platforms are supported?</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Stash works with YouTube, TikTok, Instagram, Twitter, and most websites that feature music content.
+                  Stash works with YouTube, Instagram, Twitter, and most websites that feature music content.
                 </p>
               </div>
               <div>

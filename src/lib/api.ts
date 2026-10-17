@@ -138,6 +138,18 @@ export const api = {
     onStatusUpdate?.('Extracting Audio...');
 
     try {
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(url.trim());
+      } catch {
+        throw new Error('Paste a valid Instagram or YouTube link.');
+      }
+      const host = parsedUrl.hostname.toLowerCase().replace(/\.$/, '');
+      const supportedHosts = ['instagram.com', 'youtube.com', 'youtu.be'];
+      if (!['http:', 'https:'].includes(parsedUrl.protocol) || !supportedHosts.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
+        throw new Error('Stash supports Instagram and YouTube links.');
+      }
+
       const response = await fetchBackend('/recognize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

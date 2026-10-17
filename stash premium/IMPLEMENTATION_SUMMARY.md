@@ -394,7 +394,7 @@ lg: 1024px  // Desktop
 
 ### User History (3 pre-loaded songs)
 - "As It Was" - Harry Styles (YouTube)
-- "Anti-Hero" - Taylor Swift (TikTok)
+- "Anti-Hero" - Taylor Swift (YouTube)
 - "Flowers" - Miley Cyrus (Instagram)
 
 All using real Spotify album art for high-fidelity prototype appearance.

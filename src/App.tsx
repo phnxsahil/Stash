@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } fro
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
+import type { SavedCapture } from './components/CapturePanel';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
@@ -85,7 +86,6 @@ function createDefaultState(theme?: Theme): AppState {
 /** Extract the source platform from a URL */
 function extractSource(url: string): string {
   if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
-  if (url.includes('tiktok.com')) return 'TikTok';
   if (url.includes('instagram.com')) return 'Instagram';
   if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
   return 'Web';
@@ -101,6 +101,7 @@ export default function App() {
 
   // Force mood board refresh when songs change
   const [moodBoardKey, setMoodBoardKey] = useState(0);
+  const [savedCapture, setSavedCapture] = useState<SavedCapture | null>(null);
 
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState('');
@@ -332,7 +333,7 @@ export default function App() {
         setState((prev) => ({ ...prev, isProcessing: false, processingStage: 1 }));
 
         if (state.autoAddTopMatch && matches.length > 0) {
-          await handleSongSelection(matches[0]);
+          await handleSongSelection(matches[0], url);
         } else {
           setState((prev) => ({
             ...prev,
@@ -357,10 +358,11 @@ export default function App() {
   };
   stashSubmitRef.current = handleStashSubmit;
 
-  const handleSongSelection = async (song: SongMatch) => {
+  const handleSongSelection = async (song: SongMatch, sourceUrl = state.currentUrl) => {
     try {
       setState((prev) => ({ ...prev, showModal: false }));
-      const source = extractSource(state.currentUrl);      const { song: newSong } = await api.addTrack(song, source);
+      const source = extractSource(sourceUrl);      const { song: newSong } = await api.addTrack(song, source);
+      setSavedCapture(previous => ({ url: sourceUrl, version: (previous?.version || 0) + 1 }));
 
       setState((prev) => ({
         ...prev,
@@ -541,6 +543,7 @@ export default function App() {
             playlists={state.playlists}
             theme={state.theme}
             onLogout={handleLogout}
+            savedCapture={savedCapture}
             onStashSubmit={handleStashSubmit}
             onDeleteSong={handleDeleteSong}
             onToggleAutoAdd={handleToggleAutoAdd}

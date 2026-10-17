@@ -48,7 +48,7 @@
 #### 1. **Search & Filter History** ✅ Partially Done
 
 **What to Add**:
-- Filter by platform (Instagram, TikTok, YouTube)
+- Filter by platform (Instagram, YouTube)
 - Search by song name or artist
 - Sort by date, artist, or source
 
@@ -470,8 +470,6 @@ async function getRecommendations(userId: string) {
 **Currently Supported**:
 - Instagram Reels
 - YouTube
-- TikTok (via yt-dlp)
-
 **Add Support For**:
 - Twitter/X videos
 - Facebook videos
@@ -492,7 +490,7 @@ async function getRecommendations(userId: string) {
 - Right-click on any video → "Stash to Spotify"
 - Icon in toolbar shows stash count
 - Quick preview before adding
-- Works on Instagram, TikTok, YouTube
+- Works on Instagram, YouTube
 
 **Tech Stack**:
 - Chrome Extension API

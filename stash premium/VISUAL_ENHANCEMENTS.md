@@ -103,7 +103,7 @@
   {/* Content */}
   <h3 className="text-xl font-semibold mb-3">Universal Discovery</h3>
   <p className="text-gray-400">
-    Find music anywhere on the internet—YouTube, TikTok, Instagram, or any platform
+    Find music anywhere on the internet—YouTube, Instagram, or any platform
   </p>
 </div>
 ```
@@ -185,7 +185,7 @@
     <span className="text-2xl">✨</span>
   </div>
   <p className="text-sm text-gray-400 text-center">
-    Paste any music link from YouTube, TikTok, Instagram, 
+    Paste any music link from YouTube, Instagram,
     or anywhere on the internet
   </p>
 </div>

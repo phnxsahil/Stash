@@ -4,6 +4,7 @@ import { ArrowRight, Check, ClipboardPaste, Heart, Link2, Music2, AudioLines, X 
 import '../styles/capture.css';
 import { RecordSleeve } from './RecordSleeve';
 import { CaptureScreen } from './stitch/CaptureScreen';
+import { getLinkSource } from '../lib/sources';
 
 export { Vinyl } from './Vinyl';
 import { Vinyl } from './Vinyl';
@@ -27,16 +28,19 @@ export function CaptureFlow() {
   </section>;
 }
 
+export interface SavedCapture { url: string; version: number }
+
 interface CapturePanelProps {
   onSubmit: (url: string) => void | Promise<void>;
   pendingSharedUrl?: string | null;
+  savedCapture?: SavedCapture | null;
   connected?: boolean;
   destinationName?: string;
   onChangeDestination?: () => void;
   recentSong?: import('../types').Song;
 }
 
-export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, destinationName, onChangeDestination, recentSong }: CapturePanelProps) {
+export function CapturePanel({ onSubmit, pendingSharedUrl, savedCapture, connected = false, destinationName, onChangeDestination, recentSong }: CapturePanelProps) {
   const [url, setUrl] = useState(pendingSharedUrl || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -46,6 +50,9 @@ export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, de
   const reduced = useReducedMotion();
 
   useEffect(() => { if (pendingSharedUrl) setUrl(pendingSharedUrl); }, [pendingSharedUrl]);
+  useEffect(() => {
+    if (savedCapture) setUrl(current => current.trim() === savedCapture.url.trim() ? '' : current);
+  }, [savedCapture]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -56,6 +63,11 @@ export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, de
       if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error();
     } catch {
       setError('Paste a complete link, starting with https://.');
+      inputRef.current?.focus();
+      return;
+    }
+    if (!getLinkSource(value)) {
+      setError('Stash supports Instagram Reels and YouTube links.');
       inputRef.current?.focus();
       return;
     }
@@ -103,7 +115,7 @@ export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, de
           : <button type="button" className="capture-paste" aria-label="Paste" onClick={paste} disabled={busy}><ClipboardPaste size={16} aria-hidden="true" /><span>Paste</span></button>}
       </div>
       <div id={`${id}-feedback`} className="capture-feedback" aria-live="polite">
-        {error || (pendingSharedUrl ? <><Check size={14} aria-hidden="true" /> Shared link ready. Let’s find your song.</> : 'Instagram Reels, YouTube Shorts, and TikTok links')}
+        {error || (pendingSharedUrl ? <><Check size={14} aria-hidden="true" /> Shared link ready. Let’s find your song.</> : 'Instagram Reels and YouTube links')}
       </div>
       <button type="submit" className="capture-primary" disabled={busy}>
         {busy ? <><span className="capture-equalizer" aria-hidden="true"><i /><i /><i /><i /></span>{connected ? 'Finding your song…' : 'Opening Spotify…'}</> : <>Stash this song <ArrowRight size={20} aria-hidden="true" /></>}

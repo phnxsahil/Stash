@@ -183,7 +183,7 @@ The CTA banner appears when history is empty:
       <span className="text-2xl">✨</span>
     </div>
     <p className="text-sm text-gray-400 text-center">
-      Paste any music link from YouTube, TikTok, Instagram, or anywhere on the internet
+      Paste any music link from YouTube, Instagram, or anywhere on the internet
     </p>
   </div>
 )}
