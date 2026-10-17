@@ -62,13 +62,12 @@ export default function SongHistory({ history, onDelete }: SongHistoryProps) {
           <div className="space-y-2">
             <p className="text-lg text-gray-400">No songs stashed yet</p>
             <p className="text-sm text-gray-500 max-w-md mx-auto">
-              Paste a link from YouTube, TikTok, Instagram, or any music platform above to start building your collection
+              Paste a link from YouTube, Instagram, or any music platform above to start building your collection
             </p>
           </div>
           
           <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-600">
             <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">YouTube</span>
-            <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">TikTok</span>
             <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">Instagram</span>
             <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">SoundCloud</span>
           </div>

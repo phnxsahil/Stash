@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import { AnimatePresence, motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
+import type { SavedCapture } from './components/CapturePanel';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { StashLaunch } from './components/stitch/StashLaunch';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
@@ -30,7 +33,7 @@ type StashSubmitOptions = {
 
 function getSharedUrlFromSearch(search: string): string | null {
   const params = new URLSearchParams(search);
-  const sharedUrlParam = params.get('url');
+  const sharedUrlParam = params.get('shared_url') || params.get('url');
   const sharedText = params.get('text') || params.get('title');
   const payload = sharedUrlParam || sharedText;
 
@@ -83,13 +86,14 @@ function createDefaultState(theme?: Theme): AppState {
 /** Extract the source platform from a URL */
 function extractSource(url: string): string {
   if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
-  if (url.includes('tiktok.com')) return 'TikTok';
   if (url.includes('instagram.com')) return 'Instagram';
   if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
   return 'Web';
 }
 
 export default function App() {
+  const reducedMotion = useReducedMotion();
+  const [appTab, setAppTab] = useState<'capture' | 'library'>('capture');
   const [state, setState] = useState<AppState>(() => {
     const savedTheme = localStorage.getItem('stash-theme') as Theme | null;
     return createDefaultState(savedTheme || undefined);
@@ -97,8 +101,10 @@ export default function App() {
 
   // Force mood board refresh when songs change
   const [moodBoardKey, setMoodBoardKey] = useState(0);
+  const [savedCapture, setSavedCapture] = useState<SavedCapture | null>(null);
 
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState('');
   const sharedUrlRef = useRef<string | null>(null);
   const sharedSubmissionRef = useRef<string | null>(null);
   const stashSubmitRef = useRef<((url: string, options?: StashSubmitOptions) => Promise<void>) | null>(null);
@@ -255,15 +261,19 @@ export default function App() {
     }
     document.documentElement.className = state.theme;
     localStorage.setItem('stash-theme', state.theme);
+    const pageBackground = getComputedStyle(document.documentElement).getPropertyValue('--st-surface').trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', pageBackground);
   }, [state.theme]);
 
   const loadHistory = async () => {
+    setHistoryError('');
     setState((prev) => ({ ...prev, isLoadingHistory: true }));
     try {
       const history = await api.getUserHistory();
       setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
     } catch (error) {
       logger.error('Failed to load history:', error);
+      setHistoryError('Your songs are safe. Check your connection and try again.');
       setState((prev) => ({ ...prev, isLoadingHistory: false }));
       toast.error('Failed to load history');
     }
@@ -281,6 +291,8 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
+      setHistoryError('');
+      setAppTab('capture');
       setState(createDefaultState(state.theme));
       toast.success('Logged out successfully');
     } catch (error) {
@@ -321,7 +333,7 @@ export default function App() {
         setState((prev) => ({ ...prev, isProcessing: false, processingStage: 1 }));
 
         if (state.autoAddTopMatch && matches.length > 0) {
-          await handleSongSelection(matches[0]);
+          await handleSongSelection(matches[0], url);
         } else {
           setState((prev) => ({
             ...prev,
@@ -346,10 +358,11 @@ export default function App() {
   };
   stashSubmitRef.current = handleStashSubmit;
 
-  const handleSongSelection = async (song: SongMatch) => {
+  const handleSongSelection = async (song: SongMatch, sourceUrl = state.currentUrl) => {
     try {
       setState((prev) => ({ ...prev, showModal: false }));
-      const source = extractSource(state.currentUrl);      const { song: newSong } = await api.addTrack(song, source);
+      const source = extractSource(sourceUrl);      const { song: newSong } = await api.addTrack(song, source);
+      setSavedCapture(previous => ({ url: sourceUrl, version: (previous?.version || 0) + 1 }));
 
       setState((prev) => ({
         ...prev,
@@ -468,6 +481,15 @@ export default function App() {
         return (
           <Suspense fallback={viewFallback}>
             <StatsPageView
+              playlists={state.playlists}
+              defaultPlaylistId={state.defaultPlaylistId}
+              hasSpotifyToken={state.hasSpotifyToken}
+              onToggleTheme={handleToggleTheme}
+              onLogout={handleLogout}
+              onNavigate={destination => {
+                if (destination === 'capture' || destination === 'library') { setAppTab(destination); handleNavigate('app'); }
+                else handleNavigate(destination);
+              }}
               key={moodBoardKey}
               onBack={handleBack}
               theme={state.theme}
@@ -482,6 +504,10 @@ export default function App() {
         return (
           <Suspense fallback={viewFallback}>
             <SettingsView
+            onNavigate={destination => {
+              if (destination === 'capture' || destination === 'library') { setAppTab(destination); handleNavigate('app'); }
+              else handleNavigate(destination);
+            }}
             userName={state.userName}
             userEmail={state.userEmail}
             autoAddTopMatch={state.autoAddTopMatch}
@@ -502,14 +528,22 @@ export default function App() {
       case 'app':
         return (
           <AppView
+            hasSpotifyToken={state.hasSpotifyToken}
+            initialTab={appTab}
+            onTabChange={setAppTab}
             userName={state.userName}
             history={state.history}
             songsThisWeek={songsThisWeek}
             streak={streak}
             isLoadingHistory={state.isLoadingHistory}
+            historyError={historyError}
+            onRefreshHistory={loadHistory}
             autoAddTopMatch={state.autoAddTopMatch}
+            defaultPlaylistId={state.defaultPlaylistId}
+            playlists={state.playlists}
             theme={state.theme}
             onLogout={handleLogout}
+            savedCapture={savedCapture}
             onStashSubmit={handleStashSubmit}
             onDeleteSong={handleDeleteSong}
             onToggleAutoAdd={handleToggleAutoAdd}
@@ -524,6 +558,10 @@ export default function App() {
         return (
           <LandingView
             onConnect={handleConnectSpotify}
+            onCapture={async (url) => {
+              queueSharedUrl(url);
+              await handleConnectSpotify();
+            }}
             theme={state.theme}
             onToggleTheme={handleToggleTheme}
             onNavigate={(page) => handleNavigate(page)}
@@ -535,8 +573,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="size-full">
-        {renderView()}
+      <MotionConfig reducedMotion="user">
+        <div className="size-full">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={state.currentView} initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reducedMotion ? undefined : { opacity: 0 }} transition={{ duration: 0.16 }}>
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
 
         <ConfirmationModal
           isOpen={state.showModal}
@@ -567,9 +610,11 @@ export default function App() {
         />
         <PWAInstallPrompt />
         <PWARegistration />
+        <StashLaunch />
 
         <Toaster position="bottom-right" theme={state.theme} />
-      </div>
+        </div>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }

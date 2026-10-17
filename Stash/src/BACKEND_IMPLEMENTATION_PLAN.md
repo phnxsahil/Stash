@@ -145,7 +145,7 @@ CREATE TABLE stashes (
   artist_name VARCHAR(500),
   album_art_url TEXT,
   preview_url TEXT,
-  source_platform VARCHAR(100), -- 'instagram', 'tiktok', 'youtube', etc.
+  source_platform VARCHAR(100), -- 'instagram', 'youtube', etc.
   source_url TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -692,7 +692,6 @@ router.post('/add', async (req, res) => {
 
 function getSourcePlatform(url) {
   if (url.includes('instagram.com')) return 'Instagram';
-  if (url.includes('tiktok.com')) return 'TikTok';
   if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
   if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
   return 'Web';
@@ -956,7 +955,7 @@ module.exports = errorHandler;
 ```
 □ Spotify OAuth works
 □ Can extract audio from Instagram reel
-□ Can extract audio from TikTok video
+□ Can extract audio from Instagram Reels video
 □ Can extract audio from YouTube video
 □ Song identification returns correct match
 □ Can add song to Spotify library

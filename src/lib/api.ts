@@ -138,6 +138,18 @@ export const api = {
     onStatusUpdate?.('Extracting Audio...');
 
     try {
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(url.trim());
+      } catch {
+        throw new Error('Paste a valid Instagram or YouTube link.');
+      }
+      const host = parsedUrl.hostname.toLowerCase().replace(/\.$/, '');
+      const supportedHosts = ['instagram.com', 'youtube.com', 'youtu.be'];
+      if (!['http:', 'https:'].includes(parsedUrl.protocol) || !supportedHosts.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
+        throw new Error('Stash supports Instagram and YouTube links.');
+      }
+
       const response = await fetchBackend('/recognize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -324,32 +336,28 @@ export const api = {
   },
 
   async getUserHistory(): Promise<Song[]> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        logger.warn("History: No authenticated user found, returning empty history.");
-        return [];
-      }
-
-      logger.log("Supabase: Fetching user history...", { user_id: user.id });
-
-      const { data, error } = await supabase
-        .from('history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        logger.error("Supabase: Scoped history fetch failed:", error);
-        throw error;
-      }
-
-      logger.log(`Supabase: Loaded ${data?.length || 0} items for user.`);
-      return data || [];
-    } catch (err) {
-      logger.error("API: getUserHistory critical failure:", err);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
+      logger.warn("History: No authenticated user found, returning empty history.");
       return [];
     }
+
+    logger.log("Supabase: Fetching user history...", { user_id: user.id });
+
+    const { data, error } = await supabase
+      .from('history')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error("Supabase: Scoped history fetch failed:", error);
+      throw error;
+    }
+
+    logger.log(`Supabase: Loaded ${data?.length || 0} items for user.`);
+    return data || [];
   },
 
   async deleteSong(id: string): Promise<void> {

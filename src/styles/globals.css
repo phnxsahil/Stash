@@ -1,57 +1,34 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  color-scheme: light;
   --font-size: 16px;
-  --font-family-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
-  --font-family-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
-
-  --background: oklch(0.982 0.01 95);
-  --foreground: oklch(0.2 0.014 70);
-  --card: oklch(0.995 0.008 92);
-  --card-foreground: oklch(0.2 0.014 70);
-  --popover: oklch(0.995 0.008 92);
-  --popover-foreground: oklch(0.2 0.014 70);
-  --primary: oklch(0.70 0.19 145); /* More vibrant Apple-style green */
-  --primary-foreground: oklch(0.12 0.01 0);
-  --secondary: oklch(0.95 0.012 90);
-  --secondary-foreground: oklch(0.22 0.014 70);
-  --muted: oklch(0.94 0.012 90);
-  --muted-foreground: oklch(0.5 0.018 70);
-  --accent: oklch(0.93 0.03 145);
-  --accent-foreground: oklch(0.2 0.014 70);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.99 0.005 0);
-  --border: oklch(0.88 0.014 85);
-  --input: oklch(0.975 0.01 90);
-  --input-background: oklch(0.96 0.012 90);
-  --switch-background: oklch(0.82 0.02 85);
-  --ring: oklch(0.65 0.22 145);
+  --font-family-ui: var(--st-font);
+  --font-family-display: var(--st-font);
+  --background: var(--st-surface);
+  --foreground: var(--st-text);
+  --card: var(--st-low);
+  --card-foreground: var(--st-text);
+  --popover: var(--st-container);
+  --popover-foreground: var(--st-text);
+  --primary: var(--st-action);
+  --primary-foreground: var(--st-action-text);
+  --secondary: var(--st-high);
+  --secondary-foreground: var(--st-text);
+  --muted: var(--st-high);
+  --muted-foreground: var(--st-muted);
+  --accent: var(--st-container);
+  --accent-foreground: var(--st-text);
+  --destructive: var(--st-error);
+  --destructive-foreground: var(--st-text);
+  --border: var(--st-outline);
+  --input: var(--st-high);
+  --input-background: var(--st-container);
+  --switch-background: var(--st-highest);
+  --ring: var(--st-primary);
   --radius: 1rem;
 }
-
-.dark {
-  --background: oklch(0.19 0.012 75);
-  --foreground: oklch(0.94 0.008 95);
-  --card: oklch(0.24 0.014 78);
-  --card-foreground: oklch(0.94 0.008 95);
-  --popover: oklch(0.24 0.014 78);
-  --popover-foreground: oklch(0.94 0.008 95);
-  --primary: oklch(0.72 0.2 145);
-  --primary-foreground: oklch(0.12 0.01 0);
-  --secondary: oklch(0.28 0.014 80);
-  --secondary-foreground: oklch(0.94 0.008 95);
-  --muted: oklch(0.3 0.014 82);
-  --muted-foreground: oklch(0.76 0.014 92);
-  --accent: oklch(0.34 0.03 145);
-  --accent-foreground: oklch(0.94 0.008 95);
-  --destructive: oklch(0.45 0.22 25);
-  --destructive-foreground: oklch(0.94 0.008 95);
-  --border: oklch(0.36 0.014 84);
-  --input: oklch(0.25 0.014 82);
-  --input-background: oklch(0.25 0.014 82);
-  --switch-background: oklch(0.36 0.014 84);
-  --ring: oklch(0.72 0.2 145);
-}
+.dark { color-scheme: dark; }
 
 @theme inline {
   --color-background: var(--background);
@@ -104,13 +81,9 @@
     font-family: var(--font-family-ui);
     @apply bg-background text-foreground;
     min-height: 100dvh;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    background-image:
-      radial-gradient(circle at 90% 0%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 45%),
-      radial-gradient(circle at 5% 15%, color-mix(in oklch, var(--foreground) 3%, transparent), transparent 30%),
-      radial-gradient(circle at 15% 95%, color-mix(in oklch, var(--accent) 15%, transparent), transparent 40%),
-      linear-gradient(180deg, var(--background) 0%, color-mix(in oklch, var(--background) 95%, var(--card)) 100%);
-    background-attachment: fixed;
+    overflow-x: clip;
+    -webkit-tap-highlight-color: color-mix(in oklch, var(--primary) 20%, transparent);
+    background-image: none;
   }
 
   h1, h2, h3, h4 {
@@ -121,6 +94,7 @@
 }
 
 @layer utilities {
+  .font-display { font-family: var(--font-family-display); }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
   .pt-safe { padding-top: env(safe-area-inset-top); }
   .px-safe {
@@ -129,16 +103,11 @@
   }
 
   .surface-panel {
-    @apply rounded-3xl border border-border/55 bg-card/84 backdrop-blur-3xl shadow-[0_24px_54px_-24px_rgba(0,0,0,0.3)];
-    box-shadow:
-      0 24px 54px -24px rgba(0, 0, 0, 0.22),
-      inset 0 1px 1px color-mix(in oklch, white 15%, transparent);
+    @apply rounded-3xl border border-border/65 bg-card shadow-sm;
   }
 
   .dark .surface-panel {
-    box-shadow:
-      0 24px 54px -24px rgba(0, 0, 0, 0.6),
-      inset 0 1px 0 color-mix(in oklch, white 5%, transparent);
+    box-shadow: 0 14px 36px -30px color-mix(in oklch, black 75%, transparent);
   }
 
   .surface-muted {
@@ -166,7 +135,7 @@
   }
 
   .green-glow {
-    box-shadow: 0 20px 50px -15px color-mix(in oklch, var(--primary) 65%, transparent);
+    box-shadow: 0 10px 28px -20px color-mix(in oklch, var(--primary) 55%, transparent);
   }
 
   .beta-chip {
@@ -184,13 +153,55 @@
   }
 
   .surface-panel {
-    @apply rounded-[1.75rem];
+    @apply rounded-[1.25rem];
   }
 
   .mobile-edge-bleed {
     /* Removed aggressive negative margins to fix out-of-bounds issues */
     margin-left: 0;
     margin-right: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .hide-on-compact {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .landing-hero {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .landing-hero-copy > :not(:first-child) {
+    margin-block-start: 0.875rem;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  .mobile-bottom-pad {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 500px) and (orientation: landscape) {
+  .landing-mobile-art,
+  .landing-process-panel,
+  .landing-secondary-cta,
+  .landing-beta-note {
+    display: none;
+  }
+
+  .landing-mobile-flow {
+    display: block;
   }
 }
 

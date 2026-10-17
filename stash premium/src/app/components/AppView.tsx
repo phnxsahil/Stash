@@ -126,7 +126,7 @@ export default function AppView({
                   <span className="text-2xl">✨</span>
                 </div>
                 <p className="text-sm text-gray-400 text-center">
-                  Paste any music link from YouTube, TikTok, Instagram, or anywhere on the internet
+                  Paste any music link from YouTube, Instagram, or anywhere on the internet
                 </p>
               </div>
             )}
@@ -137,7 +137,7 @@ export default function AppView({
                 type="text"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="Paste a link from YouTube, TikTok, Instagram..."
+                placeholder="Paste a link from YouTube, Instagram..."
                 className="flex-1 px-4 py-3 rounded-lg bg-[#1D1D1F] border border-gray-700 focus:border-[#1DB954] focus:outline-none transition-colors placeholder:text-gray-500"
                 disabled={isLoading}
               />

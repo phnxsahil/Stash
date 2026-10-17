@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Toast } from '../types';
-import { CircleCheck, CircleX } from 'lucide-react';
+import { CircleCheck, CircleX } from './stitch/StashIcons';
 
 interface ToastContainerProps {
     toasts: Toast[];

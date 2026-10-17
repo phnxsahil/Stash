@@ -135,7 +135,7 @@ export default function LandingView({ onConnect }: LandingViewProps) {
                   </div>
                   <h3 className="text-xl font-semibold mb-3">Universal Discovery</h3>
                   <p className="text-gray-400 dark:text-gray-400 light:text-gray-600">
-                    Find music anywhere on the internet—YouTube, TikTok, Instagram, or any platform
+                    Find music anywhere on the internet—YouTube, Instagram, or any platform
                   </p>
                 </div>
               </div>

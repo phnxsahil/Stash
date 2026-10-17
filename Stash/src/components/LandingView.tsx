@@ -131,7 +131,7 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             </div>
             <h3 className="mb-4 text-gray-900 dark:text-white text-xl" style={{ fontWeight: 600 }}>Find Any Song</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Discover music anywhere on the internet—YouTube, TikTok, Instagram, or any website.
+              Discover music anywhere on the internet—YouTube, Instagram, or any website.
             </p>
           </div>
 

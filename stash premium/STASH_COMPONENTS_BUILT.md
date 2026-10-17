@@ -115,7 +115,7 @@ This document details all the components and features that have been implemented
 - ✅ **Empty State**: 
   - Beautiful gradient circle illustration
   - Explanatory text
-  - Platform badges (YouTube, TikTok, Instagram, SoundCloud)
+  - Platform badges (YouTube, Instagram, SoundCloud)
 - ✅ **Date Filter Button**: Placeholder for future feature
 - ✅ **Responsive Layout**: Search bar scales appropriately
 - ✅ Smooth animations for new items

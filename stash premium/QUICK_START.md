@@ -2,7 +2,7 @@
 
 ## 🎵 What is Stash?
 
-Stash lets you save songs from anywhere on the internet (YouTube, TikTok, Instagram) directly to your Spotify library.
+Stash lets you save songs from anywhere on the internet (YouTube, Instagram) directly to your Spotify library.
 
 **Tagline:** *The internet is the world's radio - it just needs a save button.*
 
@@ -16,7 +16,7 @@ The green button on the landing page (simulated for MVP)
 ### Step 2: Paste a Link
 Once on the dashboard, paste any URL into the input field:
 - Example: `https://youtube.com/watch?v=example`
-- Example: `https://tiktok.com/@user/video/123`
+- Example: `https://www.instagram.com/reel/example/`
 
 ### Step 3: Choose Your Match
 - A modal appears with 3 song matches
@@ -208,7 +208,7 @@ npm run build
 
 ## 🎉 Demo Script (30s)
 
-> "This is Stash. I found a song on TikTok, but I want it in Spotify. I copy the link, paste it here, and click Stash. In 2 seconds, I see 3 matches. I can preview each one to make sure it's right. Click Select, and it's saved to my Spotify library. That simple."
+> "This is Stash. I found a song on Instagram, but I want it in Spotify. I copy the link, paste it here, and click Stash. In 2 seconds, I see 3 matches. I can preview each one to make sure it's right. Click Select, and it's saved to my Spotify library. That simple."
 
 ---
 

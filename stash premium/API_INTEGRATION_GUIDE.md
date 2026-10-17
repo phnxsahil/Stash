@@ -25,7 +25,7 @@ This is the **ONLY** file you need to modify for real API integration.
 - **Website**: https://www.acrcloud.com/
 
 ### Option 2: **AudD**
-- **Best for**: YouTube, TikTok, Instagram video recognition
+- **Best for**: YouTube, Instagram video recognition
 - **Accuracy**: 90%+
 - **Pricing**: Pay-per-use
 - **Website**: https://audd.io/
@@ -147,7 +147,7 @@ export const apiService = {
       // AudD can directly recognize from URLs!
       const response = await axios.post('https://api.audd.io/', {
         api_token: AUDD_API_KEY,
-        url: url, // Works with YouTube, TikTok, Instagram, etc.
+        url: url, // Works with YouTube, Instagram, etc.
         return: 'spotify',
       });
 
@@ -299,7 +299,7 @@ async getUserHistory(): Promise<Song[]> {
 
 For production, you'll need a backend to:
 
-1. **Extract audio from video URLs** (YouTube, TikTok, Instagram)
+1. **Extract audio from video URLs** (YouTube, Instagram)
    - Use: `yt-dlp`, `youtube-dl`, or API services
    
 2. **Handle API keys securely**
@@ -409,7 +409,7 @@ async function downloadAudio(url: string): Promise<Buffer> {
 - [ ] Build backend for audio extraction (optional but recommended)
 - [ ] Add error handling for API failures
 - [ ] Implement rate limiting
-- [ ] Test with real URLs from YouTube, TikTok, Instagram
+- [ ] Test with real URLs from YouTube, Instagram
 - [ ] Deploy backend (if needed)
 - [ ] Update frontend to point to production backend
 - [ ] Monitor API usage and costs

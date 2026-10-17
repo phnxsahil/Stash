@@ -1,5 +1,5 @@
 import { Song } from '../types';
-import { Trash2, Share2, Search, Calendar, Music } from 'lucide-react';
+import { Trash2, Share2, Search, Calendar, Music } from './stitch/StashIcons';
 import { useState, useEffect } from 'react';
 import LoadingSkeleton from './LoadingSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -74,7 +74,7 @@ export default function SongHistory({ history, onDelete }: SongHistoryProps) {
                         {/* Quick Guide */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left pt-4">
                             {[
-                                { step: '1', title: 'Find', desc: 'Copy a link from Reels, TikTok, or YouTube' },
+                                { step: '1', title: 'Find', desc: 'Copy a link from Reels, or YouTube' },
                                 { step: '2', title: 'Stash', desc: 'Paste it above and hit the magic button' }
                             ].map((item) => (
                                 <div key={item.step} className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10">

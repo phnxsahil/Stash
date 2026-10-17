@@ -123,7 +123,7 @@ def download_audio(url: str) -> str | None:
     Downloads audio from a video URL.
     
     Args:
-        url: Video URL from Instagram, TikTok, or YouTube
+        url: Video URL from Instagram, or YouTube
         
     Returns:
         Path to downloaded audio file, or None if failed

@@ -297,7 +297,6 @@ export function isValidUrl(url: string): boolean {
     const parsed = new URL(url);
     const allowedDomains = [
       'instagram.com',
-      'tiktok.com',
       'youtube.com',
       'youtu.be',
       'twitter.com',

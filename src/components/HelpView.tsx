@@ -1,5 +1,6 @@
+import { StashLogo } from './stitch/StashUI';
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, Radio, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Radio, Send } from './stitch/StashIcons';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -85,9 +86,9 @@ export function HelpView({ onBack }: HelpViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
-        <div className="container mx-auto px-4 md:px-8 py-4">
+    <div className="stitch-theme st-secondary min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 pt-safe backdrop-blur-3xl">
+        <div className="container mx-auto px-safe py-4 md:px-8">
           <div className="flex items-center gap-4">
             <Button onClick={onBack} variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
               <ArrowLeft className="w-5 h-5" />
@@ -95,7 +96,7 @@ export function HelpView({ onBack }: HelpViewProps) {
             <div>
               <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-muted-foreground">Support</p>
               <h1 className="text-xl font-semibold tracking-tight">Help & Feedback</h1>
-            </div>
+            </div><span className="st-secondary-logo"><StashLogo wordmark={false} /></span>
           </div>
         </div>
       </header>
@@ -112,13 +113,19 @@ export function HelpView({ onBack }: HelpViewProps) {
               <div>
                 <h3 className="font-semibold">How do I save a song?</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Paste or share a music link into Stash. The app identifies the track and saves it to Spotify once access and session state are valid.
+                  On Android, install Stash, then share an Instagram or YouTube link to it from the share sheet. Once Spotify is connected, Stash finds the song and saves it. On iPhone, copy the link, open Stash, and paste it.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Can I share directly to Stash on iPhone?</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Share-sheet stashing is available on Android with a supported browser and the installed Stash app. iOS web apps cannot receive links from the share sheet. On iPhone, choose Copy link in Instagram or YouTube, open Stash, and tap Paste.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold">What platforms are supported?</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Stash currently focuses on Instagram, YouTube, and general web links surfaced through the current stash flow.
+                  Stash accepts Instagram and YouTube links. Private posts may not be available to the recognition service.
                 </p>
               </div>
               <div>

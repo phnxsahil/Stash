@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus } from './stitch/StashIcons';
 import { Button } from './ui/button';
 
 interface FloatingStashButtonProps {

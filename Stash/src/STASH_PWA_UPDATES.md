@@ -89,7 +89,7 @@ Using lucide-react icons throughout:
 
 #### Visual Feedback
 - Toast notifications (dark theme)
-- Color-coded source badges (YouTube=red, TikTok=pink, etc.)
+- Color-coded source badges (YouTube=red, Instagram=green)
 - Hover states with subtle glows
 - Active states for controls
 

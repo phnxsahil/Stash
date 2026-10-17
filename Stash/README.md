@@ -1,6 +1,6 @@
 # 🎵 Stash - The Internet's Save Button for Music
 
-**Instantly save songs from Instagram Reels, TikTok, and YouTube directly to your Spotify library.**
+**Instantly save songs from Instagram Reels, and YouTube directly to your Spotify library.**
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://stashyourmusic.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -9,7 +9,7 @@
 
 ## ✨ Features
 
-- 🎯 **Instant Recognition** - Identify songs from Instagram Reels, TikTok, and YouTube links
+- 🎯 **Instant Recognition** - Identify songs from Instagram Reels, and YouTube links
 - 🎧 **Direct Spotify Integration** - Save songs directly to your Spotify library or playlists
 - 🧠 **Smart Stash** - Auto-organize songs by genre into custom playlists
 - 📊 **Music Analytics** - Track your listening habits with beautiful stats and mood boards
@@ -125,7 +125,7 @@ python main.py
 
 1. Visit https://stashyourmusic.vercel.app
 2. Login with Spotify
-3. Paste an Instagram Reel, TikTok, or YouTube link
+3. Paste an Instagram Reel, or YouTube link
 4. Click "Stash" - song is instantly saved to your library!
 
 ### Mobile (PWA)

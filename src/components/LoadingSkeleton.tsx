@@ -6,7 +6,7 @@ interface LoadingSkeletonProps {
 }
 
 function SkeletonBlock({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-muted/80 ${className}`} />;
+  return <div className={`capture-shimmer rounded-2xl bg-muted/80 ${className}`} />;
 }
 
 export default function LoadingSkeleton({
@@ -15,7 +15,7 @@ export default function LoadingSkeleton({
 }: LoadingSkeletonProps) {
   if (variant === 'shell') {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="stitch-theme min-h-screen bg-background text-foreground">
         <div className="border-b border-border/40 bg-background/70 backdrop-blur-2xl">
           <div className="container mx-auto px-4 md:px-8 py-4">
             <div className="flex items-center justify-between">

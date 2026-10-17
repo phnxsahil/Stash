@@ -1,6 +1,5 @@
-import { ArrowLeft, ChevronRight, HelpCircle, Info, LogOut, Radio, Shield } from 'lucide-react';
-import { Button } from './ui/button';
-import { Label } from './ui/label';
+import { ComingSoon, Icon, StashCard, StashRow } from './stitch/StashUI';
+import { StashShell, type StashDestination } from './stitch/StashShell';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Playlist } from '../lib/api';
@@ -20,6 +19,7 @@ interface SettingsViewProps {
   onOpenStats: () => void;
   hasSpotifyToken: boolean;
   onReconnectSpotify: () => void;
+  onNavigate?: (destination: StashDestination) => void;
 }
 
 export function SettingsView({
@@ -37,158 +37,36 @@ export function SettingsView({
   onOpenStats,
   hasSpotifyToken,
   onReconnectSpotify,
+  onNavigate,
 }: SettingsViewProps) {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
-        <div className="container mx-auto px-4 md:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Button onClick={onBack} variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-muted-foreground">Settings</p>
-              <h1 className="text-xl font-semibold tracking-tight">Preferences and access</h1>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
-        <div className="space-y-6">
-          <section className="surface-panel p-5 md:p-7">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground">Account</p>
-                <h2 className="mt-1 text-xl font-bold tracking-tight">{userName}</h2>
-                <p className="text-sm text-muted-foreground">{userEmail}</p>
-              </div>
-              <div className="beta-chip">
-                <Radio className="h-3.5 w-3.5" />
-                Private beta
-              </div>
-            </div>
-
-            {!hasSpotifyToken && (
-              <div className="surface-muted mb-5 flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="font-semibold text-foreground">Spotify connection required</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Your session expired or access is paused. Reconnect to restore playlist sync and save behavior.
-                  </p>
-                </div>
-                <Button onClick={onReconnectSpotify} className="rounded-full bg-primary text-primary-foreground hover:opacity-90">
-                  Reconnect Spotify
-                </Button>
-              </div>
-            )}
-
-            <div className="surface-muted p-4">
-              <p className="font-semibold text-foreground">Access note</p>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Stash currently runs as a limited private beta while staying within Spotify development-access limits. This does not affect your saved history once access is granted.
-              </p>
-            </div>
-          </section>
-
-          <section className="surface-panel p-5 md:p-7 space-y-6">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground">Preferences</p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight">Default behavior</h2>
-            </div>
-
-            <div className="flex items-center justify-between gap-6">
-              <div className="space-y-1">
-                <Label htmlFor="auto-add" className="font-semibold">Auto-add top match</Label>
-                <p className="text-sm text-muted-foreground">Save the strongest match immediately for a faster stash flow.</p>
-              </div>
-              <Switch
-                id="auto-add"
-                checked={autoAddTopMatch}
-                onCheckedChange={onToggleAutoAdd}
-                className="data-[state=checked]:bg-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="playlist" className="font-semibold">Default playlist</Label>
-              <Select value={defaultPlaylistId} onValueChange={onPlaylistChange}>
-                <SelectTrigger id="playlist" className="h-12 rounded-2xl bg-background/50">
-                  <SelectValue placeholder="Select a playlist" />
-                </SelectTrigger>
-                <SelectContent>
-                  {playlists.map((playlist) => (
-                    <SelectItem key={playlist.id} value={playlist.id}>
-                      {playlist.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between gap-6">
-              <div className="space-y-1">
-                <Label htmlFor="theme" className="font-semibold">Dark mode</Label>
-                <p className="text-sm text-muted-foreground">Use the current premium dark theme across mobile and desktop.</p>
-              </div>
-              <Switch
-                id="theme"
-                checked={theme === 'dark'}
-                onCheckedChange={(checked) => onToggleTheme(checked ? 'dark' : 'light')}
-                className="data-[state=checked]:bg-primary"
-              />
-            </div>
-          </section>
-
-          <section className="surface-panel p-5 md:p-7 space-y-2">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground">Support</p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight">Docs and feedback</h2>
-            </div>
-
-            {[
-              { label: 'About Stash', icon: Info, color: 'text-sky-500', target: 'about' },
-              { label: 'Help & Feedback', icon: HelpCircle, color: 'text-primary', target: 'help' },
-              { label: 'Privacy Policy', icon: Shield, color: 'text-emerald-500', target: 'privacy' },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => (window as any).onNavigate?.(item.target)}
-                  className="surface-muted flex w-full items-center justify-between p-3.5 text-left transition-colors hover:bg-card/80"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`grid h-10 w-10 place-items-center rounded-2xl bg-card/55 ${item.color}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="font-medium">{item.label}</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </button>
-              );
-            })}
-          </section>
-
-          <div className="space-y-3">
-            <Button
-              onClick={onOpenStats}
-              variant="outline"
-              className="w-full h-12 rounded-2xl font-semibold"
-            >
-              View stats
-            </Button>
-            <Button
-              onClick={onLogout}
-              variant="destructive"
-              className="w-full h-12 rounded-2xl font-semibold"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
+  const supportNavigate = (view: string) => (window as any).onNavigate?.(view);
+  return <StashShell active="settings" userName={userName} connected={hasSpotifyToken} theme={theme} onNavigate={destination => onNavigate ? onNavigate(destination) : destination === 'stats' ? onOpenStats() : onBack()} onToggleTheme={onToggleTheme} onLogout={onLogout} autoAddTopMatch={autoAddTopMatch} onToggleAutoAdd={onToggleAutoAdd}>
+    <div className="st-settings-content">
+      <header className="st-settings-heading"><div><h1>Settings</h1></div><p>Preferences & sonic sync controls</p></header>
+      <section className="st-settings-group" aria-labelledby="settings-account"><h2 id="settings-account" className="st-label">Account</h2><StashCard>
+        <div className="st-settings-identity"><span className="st-avatar"><Icon name="person" size={24} /></span><div><div><strong>{userName}</strong></div><p>{userEmail}</p></div></div>
+        <button className="st-settings-row-button" onClick={onReconnectSpotify}><StashRow icon="switch_account" title="Reconnect Spotify" description="Connect your Spotify profile" trailing={<Icon name="chevron_right" size={20} />} /></button>
+        <button className="st-settings-row-button st-danger" onClick={onLogout}><StashRow icon="logout" title="Sign Out" description="Sign out of your Stash account" trailing={<Icon name="chevron_right" size={20} />} /></button>
+      </StashCard></section>
+      <section className="st-settings-group" aria-labelledby="settings-defaults"><h2 id="settings-defaults" className="st-label">Defaults</h2><StashCard>
+        <StashRow icon="favorite" title={<label htmlFor="playlist">Default Destination</label>} description="Where newly identified tracks sync" trailing={<Select value={defaultPlaylistId} onValueChange={onPlaylistChange}><SelectTrigger id="playlist" className="st-settings-select" aria-label="Default destination"><SelectValue placeholder="Select playlist" /></SelectTrigger><SelectContent className="stitch-theme">{playlists.map(playlist => <SelectItem key={playlist.id} value={playlist.id}>{playlist.name}</SelectItem>)}</SelectContent></Select>} />
+        <StashRow icon="bolt" title={<label htmlFor="auto-add">Auto-Add Top Match</label>} description="Save the strongest match immediately" trailing={<Switch id="auto-add" checked={autoAddTopMatch} onCheckedChange={onToggleAutoAdd} />} />
+      </StashCard></section>
+      <section className="st-settings-group" aria-labelledby="settings-preferences"><h2 id="settings-preferences" className="st-label">App preferences</h2><StashCard>
+        <StashRow icon="notifications" title="Push Notifications" description="Coming soon" trailing={<Switch aria-label="Push notifications — coming soon" disabled checked={false} />} />
+        <StashRow icon="vibration" title="Haptic Feedback" description="Coming soon" trailing={<Switch aria-label="Haptic feedback — coming soon" disabled checked={false} />} />
+        <StashRow icon="palette" title={<label htmlFor="theme">Appearance</label>} description="Choose your soundstage theme" trailing={<Select value={theme} onValueChange={value => onToggleTheme(value as 'light' | 'dark')}><SelectTrigger id="theme" aria-label="Appearance" className="st-settings-select"><SelectValue /></SelectTrigger><SelectContent className="stitch-theme"><SelectItem value="dark">Obsidian</SelectItem><SelectItem value="light">Light</SelectItem></SelectContent></Select>} />
+      </StashCard></section>
+      <section className="st-settings-group" aria-labelledby="settings-data"><h2 id="settings-data" className="st-label">Data & storage</h2><StashCard>
+        <button disabled className="st-settings-row-button"><StashRow icon="ios_share" title="Export Stash History" description="Download JSON or CSV" trailing={<ComingSoon />} /></button>
+        <button disabled className="st-settings-row-button st-danger"><StashRow icon="delete_sweep" title="Clear Match History" description="Manage saved match history" trailing={<ComingSoon />} /></button>
+      </StashCard></section>
+      <section className="st-settings-group" aria-labelledby="settings-about"><h2 id="settings-about" className="st-label">About</h2><StashCard>
+        <button className="st-settings-row-button" onClick={() => supportNavigate('about')}><StashRow icon="terminal" title="Stash for Mobile" description="About Stash" trailing={<Icon name="chevron_right" size={20} />} /></button>
+        <button className="st-settings-row-button" onClick={() => supportNavigate('privacy')}><StashRow icon="verified_user" title="Privacy & Audio Processing" description="How Stash handles your data" trailing={<Icon name="chevron_right" size={20} />} /></button>
+        <button className="st-settings-row-button" onClick={() => supportNavigate('help')}><StashRow icon="support" title="Help Center & Feedback" description="Tips, access, and issue reporting" trailing={<Icon name="chevron_right" size={20} />} /></button>
+      </StashCard></section>
+      <div className="st-settings-footer"><span><Icon name="graphic_eq" size={14} />Stash your music</span><p>Private beta · Spotify access is currently invite-only.</p></div>
     </div>
-  );
+  </StashShell>;
 }

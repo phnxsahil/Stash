@@ -348,7 +348,6 @@ export default function App() {
 
   const extractSource = (url: string): string => {
     if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
-    if (url.includes('tiktok.com')) return 'TikTok';
     if (url.includes('instagram.com')) return 'Instagram';
     if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
     return 'Web';

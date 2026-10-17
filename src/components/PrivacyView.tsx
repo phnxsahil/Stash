@@ -1,4 +1,5 @@
-import { ArrowLeft, LockKeyhole, Radio, ShieldCheck } from 'lucide-react';
+import { StashLogo } from './stitch/StashUI';
+import { ArrowLeft, LockKeyhole, Radio, ShieldCheck } from './stitch/StashIcons';
 import { Button } from './ui/button';
 
 interface PrivacyViewProps {
@@ -27,7 +28,7 @@ const sections = [
 
 export function PrivacyView({ onBack }: PrivacyViewProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="stitch-theme st-secondary min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
         <div className="container mx-auto px-4 py-4 md:px-8">
           <div className="flex items-center gap-4">
@@ -37,7 +38,7 @@ export function PrivacyView({ onBack }: PrivacyViewProps) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Privacy</p>
               <h1 className="text-xl font-medium tracking-tight">Data, kept straightforward</h1>
-            </div>
+            </div><span className="st-secondary-logo"><StashLogo wordmark={false} /></span>
           </div>
         </div>
       </header>
