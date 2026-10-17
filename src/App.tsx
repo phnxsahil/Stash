@@ -17,6 +17,7 @@ import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
 import { calculateStreak } from './lib/analytics';
 import { getSharedUrlFromSearch } from './lib/shareTarget';
+import { mergeHistoryRealtimeChange, subscribeToHistoryRealtime } from './lib/historyRealtime';
 import type { AppState, ViewType, SongMatch, Theme } from './types';
 
 // Lazy-loaded views (only fetched when navigated to)
@@ -93,6 +94,7 @@ export default function App() {
 
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState('');
+  const [realtimeUserId, setRealtimeUserId] = useState<string | null>(null);
   const sharedUrlRef = useRef<string | null>(null);
   const sharedSubmissionRef = useRef<string | null>(null);
   const stashSubmitRef = useRef<((url: string, options?: StashSubmitOptions) => Promise<void>) | null>(null);
@@ -179,9 +181,8 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         logger.log('🔐 Auth state changed:', event, session ? 'Session present' : 'No session');
-        if (session) {
-          handleAuthSuccess(session.user);
-        }
+        if (session) handleAuthSuccess(session.user);
+        else setRealtimeUserId(null);
       }
     );
 
@@ -190,6 +191,7 @@ export default function App() {
 
   const handleAuthSuccess = async (user: any) => {
     logger.log('✅ Auth success! User:', user.email);
+    setRealtimeUserId(user.id);
     const token = await api.getSpotifyToken();
 
     setState((prev) => ({
@@ -231,12 +233,26 @@ export default function App() {
     }).length;
   }, [state.history]);
 
+  const loadHistory = useCallback(async () => {
+    setHistoryError('');
+    setState((prev) => ({ ...prev, isLoadingHistory: true }));
+    try {
+      const history = await api.getUserHistory();
+      setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
+    } catch (error) {
+      logger.error('Failed to load history:', error);
+      setHistoryError('Your songs are safe. Check your connection and try again.');
+      setState((prev) => ({ ...prev, isLoadingHistory: false }));
+      toast.error('Failed to load history');
+    }
+  }, []);
+
   // Load history when user logs in
   useEffect(() => {
     if (state.isLoggedIn && state.history.length === 0) {
       loadHistory();
     }
-  }, [state.isLoggedIn]);
+  }, [loadHistory, state.isLoggedIn]);
 
   // Apply theme to document and save to localStorage
   useEffect(() => {
@@ -253,19 +269,24 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', pageBackground);
   }, [state.theme]);
 
-  const loadHistory = async () => {
-    setHistoryError('');
-    setState((prev) => ({ ...prev, isLoadingHistory: true }));
-    try {
-      const history = await api.getUserHistory();
-      setState((prev) => ({ ...prev, history, isLoadingHistory: false }));
-    } catch (error) {
-      logger.error('Failed to load history:', error);
-      setHistoryError('Your songs are safe. Check your connection and try again.');
-      setState((prev) => ({ ...prev, isLoadingHistory: false }));
-      toast.error('Failed to load history');
-    }
-  };
+  useEffect(() => {
+    if (!state.isLoggedIn || !realtimeUserId) return;
+
+    return subscribeToHistoryRealtime(
+      supabase as unknown as Parameters<typeof subscribeToHistoryRealtime>[0],
+      realtimeUserId,
+      {
+        onChange: payload => {
+          setState(prev => ({
+            ...prev,
+            history: mergeHistoryRealtimeChange(prev.history, payload),
+          }));
+          setHistoryError('');
+        },
+        onReconnect: () => { void loadHistory(); },
+      },
+    );
+  }, [loadHistory, realtimeUserId, state.isLoggedIn]);
 
   const handleConnectSpotify = useCallback(async () => {
     try {
@@ -279,6 +300,7 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
+      setRealtimeUserId(null);
       setHistoryError('');
       setAppTab('capture');
       setState(createDefaultState(state.theme));
