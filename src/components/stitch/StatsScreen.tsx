@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { isSupportedSource } from '../../lib/sources';
 import type { Playlist, Song } from '../../types';
 import { ComingSoon, Icon, StashCard, StashRow } from './StashUI';
+import { AchievementBanner } from '../AchievementBanner';
 
 interface StatsScreenProps {
   history: Song[]; vibe: string; songsThisWeek: number; streak: number;
@@ -34,6 +35,7 @@ export function StatsScreen({ history, vibe, songsThisWeek, streak, genreData, t
   }, [periodHistory]);
   const sourceTotal = sources.reduce((sum, [, count]) => sum + count, 0);
   return <div className="st-stats-content">
+    <AchievementBanner totalSongs={history.length} />
     <header className="st-stats-heading"><div><p className="st-label">Sonic Summary<span className="st-desktop-extra"> & Discovery Analytics</span></p><h1>Stats</h1></div><div className="st-stats-actions">{exportControl}<button disabled className="st-telemetry-button"><Icon name="sync" size={16} />Sync telemetry<ComingSoon /></button></div>
       <div className="st-period" role="group" aria-label="Analytics period">{(['week', 'month', 'all'] as const).map(value => <button key={value} aria-pressed={period === value} onClick={() => setPeriod(value)}>{value === 'all' ? 'All Time' : value === 'week' ? 'Week' : 'Month'}</button>)}</div>
     </header>

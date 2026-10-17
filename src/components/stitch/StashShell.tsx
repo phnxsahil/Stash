@@ -31,7 +31,7 @@ export function StashShell({ active, children, userName, connected = false, them
     <aside className="st-sidebar" aria-label="Desktop navigation">
       <button className="st-brand-button" onClick={() => onNavigate('capture')} aria-label="Stash home"><StashLogo /></button>
       <p className="st-menu-label">Studio menu</p><nav aria-label="Main navigation">{nav(false)}</nav>
-      <div className="st-sidebar-bottom"><button className="st-sidebar-profile" onClick={() => onNavigate('settings')}><span className="st-avatar"><Icon name="person" size={20} /></span><span>{userName || 'Your account'}<small>Your personal collection</small></span><Icon name="more_vert" size={18} /></button></div>
+      <div className="st-sidebar-bottom"><div className="st-sidebar-connection"><span>Spotify Link</span><StashBadge connected={connected}>{connected ? 'Spotify connected' : 'Not connected'}</StashBadge></div><button className="st-sidebar-profile" onClick={() => onNavigate('settings')}><span className="st-avatar"><Icon name="person" size={20} /></span><span>{userName || 'Your account'}<small>Your personal collection</small></span><Icon name="more_vert" size={18} /></button></div>
     </aside>
     <header className="st-topbar">
       <button className="st-mobile-brand st-brand-button" onClick={() => onNavigate('capture')} aria-label="Stash home"><StashLogo /></button>

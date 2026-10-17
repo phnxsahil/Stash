@@ -8,7 +8,7 @@ test('light text uses accessible colors while green fills and icons remain uncha
   await page.goto(`${preview}?screen=capture&theme=light`);
   const active = page.locator('.st-bottom-nav button[aria-current=page]');
   expect(await active.evaluate(element => getComputedStyle(element).color)).toBe('rgb(0, 110, 45)');
-  expect(await active.locator('.stash-icon').evaluate(element => getComputedStyle(element).color)).toBe('rgb(29, 185, 84)');
+  expect(await active.locator('.stash-icon').evaluate(element => getComputedStyle(element).color)).toBe('rgb(0, 110, 45)');
   expect(await page.locator('.st-capture-submit .st-button-primary').evaluate(element => getComputedStyle(element).backgroundImage)).toContain('rgb(29, 185, 84)');
   await page.goto(`${preview}?screen=about&theme=light`);
   expect(await page.getByText('Mission', { exact: true }).evaluate(element => getComputedStyle(element).color)).toBe('rgb(0, 110, 45)');
