@@ -1,10 +1,10 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v10';
 const STATIC_CACHE = `stash-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `stash-runtime-${CACHE_VERSION}`;
 const IS_LOCALHOST =
   self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
-const PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/logo-512.png', '/offline.html'];
+const PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/logo-512.png', '/offline.html', '/stash-logo.svg', '/fonts/plus-jakarta-sans.woff2', '/fonts/material-symbols-outlined.woff2'];
 
 const NETWORK_ONLY_PATTERNS = [/\/api\//i, /\/auth\/v1\//i, /\/rest\/v1\//i, /\/recognize$/i, /\/save_track$/i, /\/remove_track$/i];
 

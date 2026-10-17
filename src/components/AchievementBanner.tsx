@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { CheckCircle2, Disc3 } from 'lucide-react';
+import { CheckCircle2, Disc3 } from './stitch/StashIcons';
 const milestones = [{id:'first-stash',target:1,title:'First Stash!',description:'Your collection has officially started.'},{id:'collector',target:10,title:'Collector',description:'Ten good finds. A collection taking shape.'},{id:'music-lover',target:25,title:'Music Lover',description:'Twenty-five songs worth keeping.'},{id:'curator',target:50,title:'Curator',description:'Fifty finds. That’s a taste of your own.'}];
 export function AchievementBanner({totalSongs}:{totalSongs:number}) {
   const [achievement,setAchievement] = useState<typeof milestones[number] | null>(null);

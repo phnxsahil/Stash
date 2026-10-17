@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { AudioLines, ArrowUpRight } from 'lucide-react';
+import { AudioLines, ArrowUpRight } from './stitch/StashIcons';
 import { Vinyl } from './Vinyl';
 
 export function RecordSleeve() {

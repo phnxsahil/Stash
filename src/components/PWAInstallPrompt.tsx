@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Radio, X } from 'lucide-react';
+import { Download, Radio, X } from './stitch/StashIcons';
 import { Button } from './ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -91,8 +91,8 @@ export function PWAInstallPrompt() {
   if (!showPrompt || !deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-5 left-0 right-0 z-50 px-safe pb-safe md:left-auto md:right-6 md:max-w-sm md:px-0">
-      <div className="surface-panel bg-gradient-to-br from-card/92 via-card/84 to-accent/24 p-4 md:p-5">
+    <div className="stitch-theme st-install-prompt fixed bottom-5 left-0 right-0 z-50 px-safe pb-safe md:left-auto md:right-6 md:max-w-sm md:px-0">
+      <div className="surface-panel bg-card p-4 md:p-5">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
             <Download className="w-4 h-4 text-primary" />

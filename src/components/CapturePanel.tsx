@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Check, ClipboardPaste, Heart, Link2, Music2, AudioLines, X } from 'lucide-react';
+import { ArrowRight, Check, ClipboardPaste, Heart, Link2, Music2, AudioLines, X } from './stitch/StashIcons';
 import '../styles/capture.css';
 import { RecordSleeve } from './RecordSleeve';
+import { CaptureScreen } from './stitch/CaptureScreen';
 
 export { Vinyl } from './Vinyl';
 import { Vinyl } from './Vinyl';
@@ -32,9 +33,10 @@ interface CapturePanelProps {
   connected?: boolean;
   destinationName?: string;
   onChangeDestination?: () => void;
+  recentSong?: import('../types').Song;
 }
 
-export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, destinationName, onChangeDestination }: CapturePanelProps) {
+export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, destinationName, onChangeDestination, recentSong }: CapturePanelProps) {
   const [url, setUrl] = useState(pendingSharedUrl || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -75,6 +77,8 @@ export function CapturePanel({ onSubmit, pendingSharedUrl, connected = false, de
     } catch { setError('Tap the field and paste your link manually. Clipboard access isn’t available.'); }
     finally { inputRef.current?.focus(); }
   };
+
+  if (connected) return <CaptureScreen id={id} url={url} busy={busy} error={error} inputRef={inputRef} onSubmit={submit} onUrlChange={value => { setUrl(value); setError(''); }} onClear={() => { setUrl(''); setError(''); inputRef.current?.focus(); }} onPaste={paste} destinationName={destinationName} onChangeDestination={onChangeDestination} recentSong={recentSong} />;
 
   return <motion.section className={`capture-panel capture-theme ${connected ? 'capture-connected' : ''}`}
     initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} aria-labelledby={`${id}-title`}>

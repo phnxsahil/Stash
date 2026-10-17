@@ -1,5 +1,5 @@
 import { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, RefreshCcw } from './stitch/StashIcons';
 import { Button } from './ui/button';
 
 interface Props {
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen bg-background px-4 py-10 text-foreground">
+                <div className="stitch-theme min-h-screen bg-background px-4 py-10 text-foreground">
                     <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
                         <div className="surface-panel w-full p-8 text-center md:p-10">
                             <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-[1.5rem] border border-destructive/20 bg-destructive/10 text-destructive">

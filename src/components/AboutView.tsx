@@ -1,7 +1,6 @@
-import { ArrowLeft, Heart, Music, Radio, Waves } from 'lucide-react';
+import { StashLogo } from './stitch/StashUI';
+import { ArrowLeft, Heart, Music, Radio, Waves } from './stitch/StashIcons';
 import { Button } from './ui/button';
-import logoLight from '../assets/772b6607fed69ee0832a6f5e7102b5a6b45e84c2.png';
-import logoDark from '../assets/b659e78a263c10d9b32767464e4b074fdb043c31.png';
 
 interface AboutViewProps {
   onBack: () => void;
@@ -27,10 +26,9 @@ const pillars = [
 ];
 
 export function AboutView({ onBack, theme }: AboutViewProps) {
-  const activeLogo = theme === 'dark' ? logoDark : logoLight;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="stitch-theme st-secondary min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-3xl">
         <div className="container mx-auto px-4 py-4 md:px-8">
           <div className="flex items-center gap-4">
@@ -40,7 +38,7 @@ export function AboutView({ onBack, theme }: AboutViewProps) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">About</p>
               <h1 className="text-xl font-medium tracking-tight">Why Stash exists</h1>
-            </div>
+            </div><span className="st-secondary-logo"><StashLogo wordmark={false} /></span>
           </div>
         </div>
       </header>
@@ -63,7 +61,7 @@ export function AboutView({ onBack, theme }: AboutViewProps) {
               </div>
 
               <div className="surface-muted flex min-w-[220px] flex-col items-center gap-4 p-6 text-center">
-                <img src={activeLogo} alt="Stash logo" className="h-24 w-24 object-contain md:h-28 md:w-28" />
+                <span className="st-about-logo" aria-label="Stash logo"><StashLogo wordmark={false} size={96} /></span>
                 <div>
                   <p className="text-sm font-medium text-foreground">Music discovery, simplified</p>
                   <p className="mt-1 text-sm text-muted-foreground">Designed and developed by Sahil Sharma.</p>

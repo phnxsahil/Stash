@@ -259,6 +259,8 @@ export default function App() {
     }
     document.documentElement.className = state.theme;
     localStorage.setItem('stash-theme', state.theme);
+    const pageBackground = getComputedStyle(document.documentElement).getPropertyValue('--st-surface').trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', pageBackground);
   }, [state.theme]);
 
   const loadHistory = async () => {
@@ -476,6 +478,15 @@ export default function App() {
         return (
           <Suspense fallback={viewFallback}>
             <StatsPageView
+              playlists={state.playlists}
+              defaultPlaylistId={state.defaultPlaylistId}
+              hasSpotifyToken={state.hasSpotifyToken}
+              onToggleTheme={handleToggleTheme}
+              onLogout={handleLogout}
+              onNavigate={destination => {
+                if (destination === 'capture' || destination === 'library') { setAppTab(destination); handleNavigate('app'); }
+                else handleNavigate(destination);
+              }}
               key={moodBoardKey}
               onBack={handleBack}
               theme={state.theme}
@@ -490,6 +501,10 @@ export default function App() {
         return (
           <Suspense fallback={viewFallback}>
             <SettingsView
+            onNavigate={destination => {
+              if (destination === 'capture' || destination === 'library') { setAppTab(destination); handleNavigate('app'); }
+              else handleNavigate(destination);
+            }}
             userName={state.userName}
             userEmail={state.userEmail}
             autoAddTopMatch={state.autoAddTopMatch}
@@ -510,6 +525,7 @@ export default function App() {
       case 'app':
         return (
           <AppView
+            hasSpotifyToken={state.hasSpotifyToken}
             initialTab={appTab}
             onTabChange={setAppTab}
             userName={state.userName}

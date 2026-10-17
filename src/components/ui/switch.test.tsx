@@ -26,11 +26,14 @@ describe('Switch Component', () => {
         expect(switchElement).toHaveAttribute('aria-checked', 'true');
     });
 
-    it('applies custom background color for visibility', () => {
-        render(<Switch />);
+    it('keeps unavailable controls disabled without changing state', () => {
+        const handleChange = vi.fn();
+        render(<Switch disabled checked={false} onCheckedChange={handleChange} />);
         const switchElement = screen.getByRole('switch');
-        // Check if our high-contrast fix class is present
-        expect(switchElement).toHaveClass('data-[state=unchecked]:bg-[#525252]');
+        expect(switchElement).toBeDisabled();
+        fireEvent.click(switchElement);
+        expect(handleChange).not.toHaveBeenCalled();
+        expect(switchElement).toHaveAttribute('aria-checked', 'false');
     });
 });
 

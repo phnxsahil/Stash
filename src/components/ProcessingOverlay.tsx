@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Check, CheckCircle2, Unplug, X } from 'lucide-react';
+import { Check, CheckCircle2, Unplug, X } from './stitch/StashIcons';
 import { Vinyl } from './Vinyl';
 import '../styles/capture.css';
 
@@ -33,7 +33,7 @@ export function ProcessingOverlay({ isVisible, stage, errorMessage, onClose, onR
   return <Dialog.Root open={isVisible} onOpenChange={open => { if (!open && isError) onClose?.(); }}>
     <Dialog.Portal>
       <Dialog.Overlay className="capture-dialog-overlay" />
-      <Dialog.Content className="capture-dialog capture-theme"
+      <Dialog.Content className="capture-dialog stitch-theme st-processing"
         onOpenAutoFocus={() => { returnFocus.current = document.activeElement as HTMLElement; }}
         onInteractOutside={event => event.preventDefault()}
         onEscapeKeyDown={event => { if (!isError) event.preventDefault(); }}

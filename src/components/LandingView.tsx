@@ -1,4 +1,5 @@
-import { ArrowUpRight, AudioLines } from 'lucide-react';
+import { StashLogo } from './stitch/StashUI';
+import { ArrowUpRight, AudioLines } from './stitch/StashIcons';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CapturePanel, CaptureFlow } from './CapturePanel';
 import '../styles/capture.css';
@@ -20,11 +21,11 @@ export function LandingView({ onConnect, onCapture, onNavigate, pendingSharedUrl
     input?.focus({ preventScroll: true });
   };
   return (
-    <div className="stash-landing capture-theme">
+    <div className="stash-landing capture-theme stitch-theme st-landing">
       <a href="#main-content" className="capture-skip">Skip to main content</a>
       <header className="capture-header">
         <a className="capture-brand" href="#main-content" aria-label="Stash home">
-          <AudioLines aria-hidden="true" /> stash<span>.</span>
+          <StashLogo />
         </a>
         <div className="landing-header-actions"><a href="#how-it-works">How it works</a><button className="capture-connect" onClick={onConnect}>Connect Spotify <ArrowUpRight size={16} aria-hidden="true" /></button></div>
       </header>

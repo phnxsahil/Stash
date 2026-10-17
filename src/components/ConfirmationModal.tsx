@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { SongMatch } from '../lib/api';
-import { Check } from 'lucide-react';
+import { Check } from './stitch/StashIcons';
 import { TrackArtwork } from './TrackArtwork';
 
 interface ConfirmationModalProps {
@@ -19,7 +19,7 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="capture-theme confirmation-dialog sm:max-w-md p-0 overflow-hidden border-border/40 bg-background/95 backdrop-blur-2xl rounded-3xl shadow-2xl">
+            <DialogContent className="stitch-theme st-match confirmation-dialog sm:max-w-md p-0 overflow-hidden border-border/40 bg-background/95 backdrop-blur-2xl rounded-3xl shadow-2xl">
                 <div className="p-6 md:p-8">
                     <DialogHeader className="mb-6">
                         <DialogTitle className="text-2xl font-bold tracking-tight">Select the best match</DialogTitle>

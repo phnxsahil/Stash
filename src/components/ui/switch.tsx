@@ -14,10 +14,10 @@ const Switch = React.forwardRef<
       ref={ref}
       data-slot="switch"
       className={cn(
-        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-all outline-none",
-        "focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-black",
+        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors outline-none",
+        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "data-[state=checked]:bg-[#1DB954] data-[state=unchecked]:bg-[#525252] dark:data-[state=unchecked]:bg-gray-700",
+        "data-[state=checked]:bg-primary data-[state=unchecked]:bg-switch-background",
         "shadow-inner",
         className,
       )}

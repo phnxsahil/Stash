@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Check, Disc3, Music2, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { Icon, relativeStashDate } from './stitch/StashUI';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Song } from '../lib/api';
 import { TrackArtwork } from './TrackArtwork';
@@ -13,6 +13,9 @@ interface HistoryListProps {
   onRefresh?: () => Promise<void>;
   onCapture?: () => void;
 }
+
+const sourceLabel = (source: string) => (({ Instagram: 'Reels', YouTube: 'Shorts' } as Record<string, string>)[source] || source || 'Link');
+const sourceIcon = (source: string) => (({ Instagram: 'photo_camera', YouTube: 'smart_display', TikTok: 'music_note' } as Record<string, string>)[source] || 'link');
 
 function stashDate(value?: string) {
   const date = value ? new Date(value) : null;
@@ -28,26 +31,26 @@ function TrackCard({ song, index, onDeleteSong }: { song: Song; index: number; o
   const reduced = useReducedMotion();
   const date = stashDate(song.created_at);
   const spotifyUrl = song.spotify_url?.startsWith('https://open.spotify.com/') ? song.spotify_url : undefined;
-  return <motion.article className="track-card" initial={reduced ? false : {opacity:0,y:18}}
+  return <motion.article className="st-track-row" initial={reduced ? false : {opacity:0,y:18}}
     whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.08}}
     exit={reduced ? undefined : {opacity:0,scale:.96}} transition={{duration:.35,delay:(index % 6)*.035}}>
     <TrackArtwork url={song.album_art_url} />
-    <div className="track-details">
+    <div className="st-track-details">
       <h3 title={song.song}>{song.song}</h3><p title={song.artist}>{song.artist}</p>
-      <div className="track-meta"><span>{song.source || 'Link'}</span><span aria-hidden="true">·</span><time dateTime={song.created_at} title={date.full}>{date.label}</time></div>
+      <div className="st-track-meta"><span className={`st-source-badge st-source-${(song.source || 'link').toLowerCase()}`}><Icon name={sourceIcon(song.source)} size={11} />{sourceLabel(song.source)}</span><span aria-hidden="true">·</span><time dateTime={song.created_at} title={date.full}>{relativeStashDate(song.created_at) || date.label}</time></div>
     </div>
-    <div className="track-actions">
-      {spotifyUrl && <a href={spotifyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${song.song} in Spotify`}><ArrowUpRight size={19} aria-hidden="true" /></a>}
+    <div className="st-track-actions">
+      {spotifyUrl && <a href={spotifyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${song.song} in Spotify`}><Icon name="open_in_new" size={19} aria-hidden="true" /></a>}
       <AlertDialog.Root>
-        <AlertDialog.Trigger asChild><button aria-label={`Remove ${song.song} from stash`}><Trash2 size={16} aria-hidden="true" /></button></AlertDialog.Trigger>
+        <AlertDialog.Trigger asChild><button aria-label={`Remove ${song.song} from stash`}><Icon name="delete" size={16} aria-hidden="true" /></button></AlertDialog.Trigger>
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="capture-dialog-overlay" />
-          <AlertDialog.Content className="capture-dialog capture-theme library-remove-dialog">
-            <div className="capture-status-icon"><Disc3 size={36} /></div>
+          <AlertDialog.Content className="capture-dialog stitch-theme st-confirm library-remove-dialog">
+            <div className="capture-status-icon"><Icon name="album" size={36} /></div>
             <AlertDialog.Title>Remove this find?</AlertDialog.Title>
             <AlertDialog.Description className="capture-dialog-description">“{song.song}” will leave your Stash history. If linked, it will also be removed from your Spotify destination.</AlertDialog.Description>
-            <div className="remove-actions"><AlertDialog.Cancel className="library-secondary">Keep it</AlertDialog.Cancel>
-              <AlertDialog.Action className="capture-primary" onClick={()=>onDeleteSong(song.id)}>Remove</AlertDialog.Action></div>
+            <div className="remove-actions"><AlertDialog.Cancel className="st-button st-button-secondary">Keep it</AlertDialog.Cancel>
+              <AlertDialog.Action className="st-button st-button-primary" onClick={()=>onDeleteSong(song.id)}>Remove</AlertDialog.Action></div>
           </AlertDialog.Content>
         </AlertDialog.Portal>
       </AlertDialog.Root>
@@ -106,26 +109,26 @@ export function HistoryList({ history, onDeleteSong, isLoading = false, error, o
     return ()=>{element.removeEventListener('touchstart',start);element.removeEventListener('touchmove',move);element.removeEventListener('touchend',end);element.removeEventListener('touchcancel',cancel);};
   },[onRefresh,pull,reduced,isLoading]);
 
-  return <section ref={listRef} className="history-library" aria-label="Stash history" aria-busy={isLoading || refreshing}>
-    <div className="history-toolbar">
-      <div className="library-search"><Search size={18} aria-hidden="true" /><input id={`${id}-search`} aria-label="Search your stash" placeholder="Search songs or artists" value={query} onChange={event=>setQuery(event.target.value)} />
-        {query && <button aria-label="Clear search" onClick={()=>setQuery('')}><X size={17} /></button>}
+  return <section ref={listRef} className="history-library st-history" aria-label="Stash history" aria-busy={isLoading || refreshing}>
+    <div className="st-history-toolbar">
+      <div className="st-library-search"><Icon name="search" size={20} /><input id={`${id}-search`} aria-label="Search your stash" placeholder="Search songs or artists" value={query} onChange={event => setQuery(event.target.value)} />
+        {query && <button aria-label="Clear search" onClick={() => setQuery('')}><Icon name="close" size={14} /></button>}
       </div>
-      <div className="library-filters">
-        <select aria-label="Filter by source" value={source} onChange={event=>setSource(event.target.value)}><option>All sources</option>{sources.map(item=><option key={item}>{item}</option>)}</select>
-        <select aria-label="Sort stash" value={sort} onChange={event=>setSort(event.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Song title</option></select>
-        {onRefresh && <button className="library-refresh" aria-label="Refresh stash" onClick={()=>void refreshRef.current()} disabled={refreshing || isLoading}><RefreshCw size={18} aria-hidden="true" className={refreshing ? 'is-spinning' : ''} /></button>}
-      </div>
+      <div className="st-library-filters"><div className="st-source-filters" role="group" aria-label="Filter by source">
+        {['All sources', ...sources.slice().sort((a, b) => { const order = ['Instagram', 'YouTube', 'TikTok']; return (order.includes(a) ? order.indexOf(a) : 99) - (order.includes(b) ? order.indexOf(b) : 99); })].map(item => <button key={item} aria-pressed={source === item} onClick={() => setSource(item)}>{item !== 'All sources' && <Icon name={sourceIcon(item)} size={15} />}{item === 'All sources' ? 'All' : sourceLabel(item)}</button>)}
+      </div><div className="st-library-sort"><label><Icon name="swap_vert" size={16} /><select aria-label="Sort stash" value={sort} onChange={event => setSort(event.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Song title</option></select></label>
+        {onRefresh && <button aria-label="Refresh stash" onClick={() => void refreshRef.current()} disabled={refreshing || isLoading}><Icon name="sync" size={18} className={refreshing ? 'st-spin' : ''} /></button>}
+      </div></div>
     </div>
-    <div className="library-result-line"><span>{isLoading && !history.length ? 'Loading your finds…' : error && !history.length ? 'Collection unavailable' : `${filtered.length} ${filtered.length === 1 ? 'song' : 'songs'}${query || source !== 'All sources' ? ' found' : ' in your collection'}`}</span><span>GOOD FINDS, KEPT.</span></div>
+    <div className="st-result-line"><span>{isLoading && !history.length ? 'Loading your finds…' : error && !history.length ? 'Collection unavailable' : `${filtered.length} ${filtered.length === 1 ? 'song' : 'songs'}${query || source !== 'All sources' ? ' found' : ' in your collection'}`}</span></div>
     <div className="library-refresh-feedback" role="status" aria-live="polite">{armed ? 'Release to refresh' : refreshing ? 'Refreshing your stash…' : ''}</div>
-    {(error || refreshError) && <div className="library-error" role="alert"><div><strong>Your stash couldn’t load.</strong><p>{error || refreshError}</p></div><button className="library-secondary" disabled={refreshing} onClick={()=>void refreshRef.current()}>Try again</button></div>}
+    {(error || refreshError) && <div className="st-library-error" role="alert"><div><strong>Your stash couldn’t load.</strong><p>{error || refreshError}</p></div><button className="st-button st-button-secondary" disabled={refreshing} onClick={()=>void refreshRef.current()}>Try again</button></div>}
     <motion.div style={{y:pull}}>
-      {isLoading && !history.length ? <div className="track-grid" aria-label="Loading songs">{Array.from({length:6},(_,index)=><div className="track-card track-skeleton" key={index} aria-hidden="true"><div className="track-artwork capture-shimmer" /><div className="track-details"><div className="capture-shimmer" /><div className="capture-shimmer" /><div className="capture-shimmer" /></div></div>)}</div>
-        : !history.length && !error ? <div className="library-empty"><div className="empty-records" aria-hidden="true"><Disc3 /></div><h2>Your best finds are still ahead.</h2><p>That song stuck in your head? Give it a home.<br />Paste your first link and start your collection.</p><button className="capture-primary" onClick={onCapture}>Find your first song <ArrowUpRight size={18} /></button></div>
-        : history.length > 0 && !filtered.length ? <div className="library-empty search-empty"><Search size={32} aria-hidden="true" /><h2>No songs found.</h2><p>Try another title, artist, or source.</p><button className="library-secondary" onClick={()=>{setQuery('');setSource('All sources');}}>Clear filters</button></div>
-        : <div className="track-grid"><AnimatePresence initial={false}>{filtered.map((song,index)=><TrackCard key={song.id} song={song} index={index} onDeleteSong={onDeleteSong} />)}</AnimatePresence></div>}
+      {isLoading && !history.length ? <div className="st-track-list" aria-label="Loading songs">{Array.from({length:6},(_,index)=><div className="st-track-row st-track-skeleton" key={index} aria-hidden="true"><div className="track-artwork capture-shimmer" /><div className="st-track-details"><div className="capture-shimmer" /><div className="capture-shimmer" /><div className="capture-shimmer" /></div></div>)}</div>
+        : !history.length && !error ? <div className="st-library-empty"><div className="empty-records" aria-hidden="true"><Icon name="album" /></div><h2>Your best finds are still ahead.</h2><p>That song stuck in your head? Give it a home.<br />Paste your first link and start your collection.</p><button className="st-button st-button-primary" onClick={onCapture}>Find your first song <Icon name="open_in_new" size={18} /></button></div>
+        : history.length > 0 && !filtered.length ? <div className="st-library-empty search-empty"><Icon name="search" size={32} aria-hidden="true" /><h2>No songs found.</h2><p>Try another title, artist, or source.</p><button className="st-button st-button-secondary" onClick={()=>{setQuery('');setSource('All sources');}}>Clear filters</button></div>
+        : <div className="st-track-list"><AnimatePresence initial={false}>{filtered.map((song,index)=><TrackCard key={song.id} song={song} index={index} onDeleteSong={onDeleteSong} />)}</AnimatePresence></div>}
     </motion.div>
-    {history.length > 0 && filtered.length > 0 && <p className="library-end"><Check size={14} aria-hidden="true" /> You’re all caught up. Go find something good.</p>}
+    {history.length > 0 && filtered.length > 0 && <p className="st-library-end"><Icon name="check" size={14} aria-hidden="true" /> Library up to date</p>}
   </section>;
 }

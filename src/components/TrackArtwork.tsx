@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {Disc3,Music2} from 'lucide-react';
+import {Disc3,Music2} from './stitch/StashIcons';
 export function TrackArtwork({url}:{url?:string}) {
  const [failed,setFailed]=useState(false);
  useEffect(()=>setFailed(false),[url]);

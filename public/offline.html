@@ -5,23 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Offline | Stash</title>
   <style>
+    * { box-sizing: border-box; }
+    @font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 400 800; font-display: swap; src: url("/fonts/plus-jakarta-sans.woff2") format("woff2"); }
     :root {
       color-scheme: light dark;
-      font-family: "Sora", "Space Grotesk", "Segoe UI", sans-serif;
+      font-family: "Plus Jakarta Sans", sans-serif;
     }
     body {
       margin: 0;
-      min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
       place-items: center;
       padding: 24px;
-      background: #f5f8f6;
-      color: #162016;
+      background: #f7f8f5;
+      color: #1b211b;
     }
     @media (prefers-color-scheme: dark) {
       body {
-        background: #121916;
-        color: #e7f0e9;
+        background: #131313;
+        color: #e5e2e1;
       }
     }
     .panel {
@@ -34,7 +36,7 @@
     }
     @media (prefers-color-scheme: dark) {
       .panel {
-        background: rgba(20, 26, 24, 0.82);
+        background: #1c1b1b;
         border-color: rgba(157, 190, 160, 0.25);
       }
     }
@@ -51,6 +53,7 @@
 </head>
 <body>
   <main class="panel">
+    <img src="/stash-logo.svg" width="40" height="40" alt="Stash" style="margin-bottom:16px" />
     <h1>You are offline right now</h1>
     <p>Stash saved this shell so you can still open parts of the app. Reconnect to stash new songs and sync with Spotify.</p>
   </main>

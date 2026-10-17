@@ -5,27 +5,27 @@ test.describe('Library interactions',()=>{
  test('responsive layout, long titles, missing art, and dates',async({page})=>{
   for(const viewport of [{width:390,height:844},{width:320,height:640},{width:844,height:390},{width:1440,height:1000}]){
    await page.setViewportSize(viewport);
-   await expect(page.getByRole('heading',{name:'Your library.'})).toBeVisible();
+   await expect(page.getByRole('heading',{name:'Your library'})).toBeVisible();
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await expect(page.getByRole('heading',{name:'A song with a wonderfully long title that should stay readable'})).toBeVisible();
   }
   await expect(page.locator('.artwork-fallback')).toHaveCount(2);
   await expect(page.getByText('Date unavailable')).toBeVisible();
-  await expect(page.getByRole('button',{name:'6 Total stashed. Open statistics'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'6 Stashed. Open statistics'})).toBeVisible();
  });
  test('search, source filter, sorting, and no results',async({page})=>{
   await page.getByRole('textbox',{name:'Search your stash'}).fill('company');
-  await expect(page.locator('.track-card')).toHaveCount(1);
+  await expect(page.locator('.st-track-row')).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'Slow Sunday'})).toBeVisible();
   await page.getByRole('button',{name:'Clear search'}).click();
-  await page.getByRole('combobox',{name:'Filter by source'}).selectOption('Instagram');
-  await expect(page.locator('.track-card')).toHaveCount(3);
+  await page.getByRole('button',{name:'Reels',exact:true}).click();
+  await expect(page.locator('.st-track-row')).toHaveCount(3);
   await page.getByRole('combobox',{name:'Sort stash'}).selectOption('title');
-  await expect(page.locator('.track-card h3').first()).toHaveText('Golden Hour');
+  await expect(page.locator('.st-track-row h3').first()).toHaveText('Golden Hour');
   await page.getByRole('textbox',{name:'Search your stash'}).fill('nothing matches this');
   await expect(page.getByRole('heading',{name:'No songs found.'})).toBeVisible();
   await page.getByRole('button',{name:'Clear filters'}).click();
-  await expect(page.locator('.track-card')).toHaveCount(6);
+  await expect(page.locator('.st-track-row')).toHaveCount(6);
  });
  test('delete requires confirmation and cancel restores focus',async({page})=>{
   const remove=page.getByRole('button',{name:'Remove Night Drive from stash'});
@@ -33,19 +33,19 @@ test.describe('Library interactions',()=>{
   await expect(page.getByRole('alertdialog')).toBeVisible();
   await page.getByRole('button',{name:'Keep it'}).click();
   await expect(remove).toBeFocused();
-  await expect(page.locator('.track-card')).toHaveCount(6);
+  await expect(page.locator('.st-track-row')).toHaveCount(6);
   await remove.click();
   await page.getByRole('button',{name:'Remove',exact:true}).click();
-  await expect(page.locator('.track-card')).toHaveCount(5);
+  await expect(page.locator('.st-track-row')).toHaveCount(5);
   await expect(page.getByRole('heading',{name:'Night Drive',exact:true})).toHaveCount(0);
  });
  test('capture draft and library filters survive view changes',async({page})=>{
   await page.getByRole('textbox',{name:'Search your stash'}).fill('night');
   await page.getByRole('button',{name:'Capture',exact:true}).first().click();
   await page.getByRole('textbox',{name:'Music source URL'}).fill('https://youtu.be/draft');
-  await page.getByRole('button',{name:'Your library',exact:true}).first().click();
+  await page.getByRole('button',{name:'Library',exact:true}).first().click();
   await expect(page.getByRole('textbox',{name:'Search your stash'})).toHaveValue('night');
-  await expect(page.locator('.track-card')).toHaveCount(1);
+  await expect(page.locator('.st-track-row')).toHaveCount(1);
   await page.getByRole('button',{name:'Capture',exact:true}).first().click();
   await expect(page.getByRole('textbox',{name:'Music source URL'})).toHaveValue('https://youtu.be/draft');
  });
@@ -55,16 +55,16 @@ test.describe('Library interactions',()=>{
   await page.getByRole('button',{name:'Find your first song'}).click();
   await expect(page.getByRole('textbox',{name:'Music source URL'})).toBeVisible();
   await page.goto(preview+'?state=loading');
-  await expect(page.locator('.track-skeleton')).toHaveCount(6);
-  await expect(page.getByRole('button',{name:'Loading Total stashed'})).toBeDisabled();
+  await expect(page.locator('.st-track-skeleton')).toHaveCount(6);
+  await expect(page.getByRole('button',{name:'Loading Stashed'})).toBeDisabled();
   await page.goto(preview+'?state=error');
   await expect(page.getByRole('alert')).toContainText('Your stash couldn’t load.');
-  await expect(page.getByText('Collection unavailable')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Total stashed unavailable'})).toBeDisabled();
+  await expect(page.getByText('Collection unavailable')).toBeAttached();
+  await expect(page.getByRole('button',{name:'Stashed unavailable'})).toBeDisabled();
   await expect(page.getByRole('heading',{name:'Your best finds are still ahead.'})).toHaveCount(0);
   await page.getByRole('button',{name:'Try again'}).click();
   await expect(page.getByTestId('refresh-count')).toHaveText('Refreshes: 1');
-  await expect(page.locator('.track-card')).toHaveCount(6);
+  await expect(page.locator('.st-track-row')).toHaveCount(6);
   await expect(page.getByRole('alert')).toHaveCount(0);
  });
  test('pull refresh triggers once and horizontal gestures do not refresh',async({page})=>{
@@ -87,6 +87,6 @@ test.describe('Library interactions',()=>{
   expect(await page.locator('.record-package').evaluate(el=>getComputedStyle(el).transform)).toBe('none');
   await page.goto(preview+'?state=loading');
   expect(await page.locator('.capture-shimmer').first().evaluate(el=>getComputedStyle(el,'::after').animationName)).toBe('none');
-  expect(await page.locator('.app-screen[data-active="true"]').evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+  expect(await page.locator('.st-shell').evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
  });
 });

@@ -14,13 +14,13 @@ describe('Capture interactions', () => {
     render(<CapturePanel connected onSubmit={submit} />);
     const input = screen.getByRole('textbox', {name:'Music source URL'});
     fireEvent.change(input, {target:{value:'https://youtu.be/test'}});
-    fireEvent.click(screen.getByRole('button', {name:'Stash this song'}));
+    fireEvent.click(screen.getByRole('button', {name:'Stash to Spotify'}));
     expect(screen.getByRole('button', {name:'Finding your song…'})).toBeDisabled();
     expect(submit).toHaveBeenCalledTimes(1);
     rejectRequest(new Error('Offline'));
     await screen.findByText('That didn’t go through. Your link is still here — try again.');
     expect(input).toHaveValue('https://youtu.be/test');
-    expect(screen.getByRole('button', {name:'Stash this song'})).toBeEnabled();
+    expect(screen.getByRole('button', {name:'Stash to Spotify'})).toBeEnabled();
   });
 
   it('clipboard denial explains the manual fallback', async () => {
@@ -36,7 +36,7 @@ describe('Capture interactions', () => {
     const submit = vi.fn();
     const change = vi.fn();
     render(<CapturePanel connected onSubmit={submit} destinationName="Liked Songs" onChangeDestination={change} />);
-    fireEvent.click(screen.getByRole('button', {name:'Paste'}));
+    fireEvent.click(screen.getByRole('button', {name:'Paste from clipboard'}));
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('https://youtu.be/test'));
     expect(submit).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name:'Change'}));

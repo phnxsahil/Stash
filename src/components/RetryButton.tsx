@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw } from './stitch/StashIcons';
 import { Button } from './ui/button';
 
 interface RetryButtonProps {
