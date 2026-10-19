@@ -196,9 +196,28 @@ async def recognize_reel(req: ReelRequest, request: Request):
     if not settings.GEMINI_API_KEY:
         logger.warning("Gemini API Key missing. Genre detection will be disabled.")
 
-    # 1. DOWNLOAD AUDIO
+    # 1. START DOWNLOAD FIRST (it is the fallback and usually the winner)
     loop = asyncio.get_running_loop()
-    audio_filename = await loop.run_in_executor(None, download_audio, req.url)
+    download_task = loop.run_in_executor(None, download_audio, req.url)
+
+    # 1b. FAST PATH (YouTube only): title metadata -> Spotify, raced against
+    # the download. Only a corroborated match wins; anything doubtful falls
+    # through to fingerprinting with no time lost.
+    video_id = cache_key.split(':', 1)[1] if cache_key and cache_key.startswith('youtube:') else None
+    if video_id:
+        metadata_task = loop.run_in_executor(None, try_metadata_fastpath, video_id)
+        try:
+            meta_result = await asyncio.wait_for(asyncio.shield(metadata_task), timeout=10)
+        except Exception:
+            meta_result = None
+        if meta_result:
+            logger.debug("Fast path hit: %s", cache_key)
+            asyncio.create_task(_cleanup_download(download_task))
+            _recognition_cache[cache_key] = {"ts": time.time(), "result": meta_result}
+            return meta_result
+        logger.debug("Fast path missed, using audio fingerprint: %s", cache_key)
+
+    audio_filename = await download_task
     if not audio_filename:
         # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
         raise HTTPException(status_code=422, detail="Could not download audio. Instagram might be blocking the request. Try a different link.")
@@ -274,6 +293,71 @@ def _cookies_configured_for(url: str) -> bool:
     if is_instagram:
         return bool(settings.YTDLP_COOKIES_INSTAGRAM)
     return bool(settings.YTDLP_COOKIES_INSTAGRAM)
+
+def _strip_brackets(text: str) -> str:
+    return re.sub(r'[\(\[][^^\)\]]*[\)\]]', ' ', text)
+
+def _title_tokens(text: str) -> set:
+    words = re.sub(r'[^a-z0-9 ]', ' ', text.lower()).split()
+    stopwords = {'official', 'video', 'lyrics', 'lyric', 'audio', 'hd', '4k',
+                 'mv', 'music', 'ft', 'feat', 'the', 'a', 'an', 'full', 'song'}
+    return {w for w in words if w not in stopwords and len(w) > 1}
+
+def try_metadata_fastpath(video_id: str) -> Optional[dict]:
+    """YouTube oEmbed title+channel -> Spotify. Returns a result dict ONLY on
+    a corroborated match; otherwise None and the caller fingerprints audio."""
+    try:
+        resp = requests.get(
+            'https://www.youtube.com/oembed',
+            params={'url': f'https://www.youtube.com/watch?v={video_id}', 'format': 'json'},
+            timeout=5,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+    except Exception as e:
+        logger.debug("oEmbed failed: %s", e)
+        return None
+
+    raw_title = data.get('title') or ''
+    channel = data.get('author_name') or ''
+    artist_guess = re.sub(r'\s*(VEVO|-\s*Topic|Official.*)$', '', channel, flags=re.IGNORECASE).strip()
+    title_guess = _strip_brackets(raw_title).strip()
+    if not title_guess:
+        return None
+
+    try:
+        result = search_spotify_strict(title_guess, artist_guess)
+    except Exception:
+        return None
+    if not result or not result.get('success'):
+        return None
+
+    track_tokens = _title_tokens(result.get('track', ''))
+    guess_tokens = _title_tokens(title_guess)
+    if not guess_tokens:
+        return None
+    overlap = len(track_tokens & guess_tokens) / len(guess_tokens)
+
+    spotify_artist = (result.get('artist') or '').lower()
+    artist_ok = bool(artist_guess) and (
+        artist_guess.lower() in spotify_artist or spotify_artist in artist_guess.lower()
+    )
+
+    # Strict: channel corroborates the artist AND titles strongly overlap.
+    # Without a usable channel name, demand near-total title overlap.
+    if (artist_ok and overlap >= 0.6) or (not artist_guess and overlap >= 0.85):
+        return result
+    return None
+
+async def _cleanup_download(task) -> None:
+    """After a fast-path win, let the abandoned download finish and delete it."""
+    try:
+        path = await task
+        if path and os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
 
 def download_audio(url: str) -> Optional[str]:
     """Downloads audio to /tmp. With cookies configured, go straight to them;
