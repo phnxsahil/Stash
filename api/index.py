@@ -5,6 +5,7 @@ import glob
 import logging
 import random
 import re
+import threading
 from uuid import uuid4
 import asyncio
 from functools import lru_cache
@@ -217,7 +218,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
             return meta_result
         logger.debug("Fast path missed, using audio fingerprint: %s", cache_key)
 
-    audio_filename = await download_task
+    audio_filename, stream_url = await download_task
     if not audio_filename:
         # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
         raise HTTPException(status_code=422, detail="Could not download audio. Instagram might be blocking the request. Try a different link.")
@@ -253,7 +254,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
         # (intro, silence, talk), retry once with a mid-song window.
         if not out.get('matches'):
             logger.debug("No match in 0-8s window. Retrying 30-38s window...")
-            mid_filename = await loop.run_in_executor(None, download_audio, req.url, 30.0)
+            mid_filename, _ = await loop.run_in_executor(None, download_audio, req.url, 30.0, stream_url)
             if mid_filename:
                 try:
                     out = await shazam.recognize(mid_filename)
@@ -368,110 +369,113 @@ def try_metadata_fastpath(video_id: str) -> Optional[dict]:
 async def _cleanup_download(task) -> None:
     """After a fast-path win, let the abandoned download finish and delete it."""
     try:
-        path = await task
+        result = await task
+        path = result[0] if isinstance(result, tuple) else result
         if path and os.path.exists(path):
             os.remove(path)
     except Exception:
         pass
 
-def download_audio(url: str, start: float = 0.0) -> Optional[str]:
-    """Downloads an 8s audio window starting at `start` seconds.
-    With cookies configured, go straight to them; otherwise cookieless first."""
-    
-    if _cookies_configured_for(url):
-        # Authenticated first - on hosts where cookieless is blocked this
-        # skips a guaranteed-fail attempt that costs seconds.
-        result = _download_with_options(url, use_cookies=True, start=start)
-        if not result:
-            logger.warning("Authenticated download failed. Trying cookieless...")
-            result = _download_with_options(url, use_cookies=False, start=start)
-    else:
-        result = _download_with_options(url, use_cookies=False, start=start)
-    
-    return result
+# One yt-dlp extraction at a time - the free 512MB instance cannot
+# survive two yt-dlp + deno + ffmpeg runs at once.
+_ytdlp_lock = threading.Semaphore(1)
 
-def _download_with_options(url: str, use_cookies: bool = False, start: float = 0.0) -> Optional[str]:
-    """Internal function to download with or without cookies."""
-    try:
-        filename = f"/tmp/temp_{uuid4().hex}"
-        has_ffmpeg = shutil.which("ffmpeg") is not None
-        
-        # Detect platform from URL
-        is_youtube = 'youtube.com' in url or 'youtu.be' in url
-        is_instagram = 'instagram.com' in url
-        
-        ydl_opts = {
-            'quiet': False, 
-            'no_warnings': False,
-            'nocheckcertificate': True,
-            # SPEED: Only download an 8 second window (Shazam identifies in ~5s)
-            'download_ranges': lambda info, ydl, s=start: [{'start_time': s, 'end_time': s + 8}],
-            'noplaylist': True,
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Sec-Fetch-Mode': 'navigate',
-            }
-        }
+_YDL_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Sec-Fetch-Mode': 'navigate',
+}
 
-        # Add cookies with rotation support based on platform
-        if use_cookies:
-            cookies_content = None
-            platform_name = ""
-            
-            # Select cookies based on URL type
-            if is_youtube and settings.YTDLP_COOKIES_YOUTUBE:
-                cookies_content = random.choice(settings.YTDLP_COOKIES_YOUTUBE)
-                platform_name = "YouTube"
-                cookie_file = '/tmp/youtube_cookies.txt'
-            elif is_instagram and settings.YTDLP_COOKIES_INSTAGRAM:
-                cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
-                platform_name = "Instagram"
-                cookie_file = '/tmp/instagram_cookies.txt'
-            elif settings.YTDLP_COOKIES_INSTAGRAM:
-                # Fallback to Instagram cookies for other platforms (other supported sources)
-                cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
-                platform_name = "General"
-                cookie_file = '/tmp/cookies.txt'
-            
-            if cookies_content:
-                try:
-                    with open(cookie_file, 'w') as f:
-                        f.write(cookies_content)
-                    ydl_opts['cookiefile'] = cookie_file
-                    logger.debug("Using %s cookies for download", platform_name)
-                except Exception as e:
-                    logger.warning("Cookie file creation failed: %s", e)
-            else:
-                logger.debug("No cookies available for %s", platform_name or 'this platform')
-        else:
-            logger.debug("Trying cookieless download (public post)...")
-
-        if has_ffmpeg:
-            ydl_opts.update({
-                'format': 'worstaudio/worst',  # SPEED: Lowest quality is fine for fingerprinting
-                'outtmpl': filename,
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '64',  # SPEED: 64kbps is enough for Shazam
-                }],
-            })
-        else:
-            ydl_opts.update({
-                'format': 'bestaudio',
-                'outtmpl': f"{filename}.%(ext)s",
-            })
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        
-        files = glob.glob(f"{filename}*")
-        return files[0] if files else None
-    except Exception as e:
-        logger.error("Download Error: %s", e)
+def _cookie_file_for(url: str, use_cookies: bool) -> Optional[str]:
+    """Write the platform cookie file, return its path (or None)."""
+    if not use_cookies:
         return None
+    is_youtube = 'youtube.com' in url or 'youtu.be' in url
+    is_instagram = 'instagram.com' in url
+    cookies_content = None
+    cookie_file = None
+    if is_youtube and settings.YTDLP_COOKIES_YOUTUBE:
+        cookies_content = random.choice(settings.YTDLP_COOKIES_YOUTUBE)
+        cookie_file = '/tmp/youtube_cookies.txt'
+    elif is_instagram and settings.YTDLP_COOKIES_INSTAGRAM:
+        cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
+        cookie_file = '/tmp/instagram_cookies.txt'
+    elif settings.YTDLP_COOKIES_INSTAGRAM:
+        cookies_content = random.choice(settings.YTDLP_COOKIES_INSTAGRAM)
+        cookie_file = '/tmp/cookies.txt'
+    if not cookies_content:
+        return None
+    try:
+        with open(cookie_file, 'w') as f:
+            f.write(cookies_content)
+        return cookie_file
+    except Exception as e:
+        logger.warning("Cookie file creation failed: %s", e)
+        return None
+
+def _select_stream_url(info: dict) -> Optional[str]:
+    """Smallest audio stream from a yt-dlp info dict."""
+    formats = (info or {}).get('formats') or []
+    audio = [f for f in formats if f.get('url') and f.get('acodec') not in (None, 'none')]
+    if not audio:
+        return (info or {}).get('url')
+    audio.sort(key=lambda f: f.get('abr') or f.get('tbr') or 10**9)
+    return audio[0]['url']
+
+def _resolve_stream_url(url: str, use_cookies: bool) -> Optional[str]:
+    """Run yt-dlp ONCE to get the direct audio stream URL (no download).
+    Serialized via _ytdlp_lock."""
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'nocheckcertificate': True,
+        'noplaylist': True,
+        'skip_download': True,
+        'http_headers': _YDL_HEADERS,
+    }
+    cookie_file = _cookie_file_for(url, use_cookies)
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
+    try:
+        with _ytdlp_lock:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+        return _select_stream_url(info or {})
+    except Exception as e:
+        logger.error("Stream resolve failed (%s): %s", 'cookies' if use_cookies else 'cookieless', e)
+        return None
+
+def _download_window(stream_url: str, start: float) -> Optional[str]:
+    """Pull an 8s window from an already-resolved stream URL. ffmpeg only,
+    no yt-dlp, no deno, small memory."""
+    filename = f"/tmp/temp_{uuid4().hex}.mp3"
+    try:
+        import subprocess
+        subprocess.run(
+            ['ffmpeg', '-y', '-ss', str(start), '-t', '8', '-i', stream_url,
+             '-vn', '-acodec', 'libmp3lame', '-b:a', '64k', filename],
+            check=True, capture_output=True, timeout=90,
+        )
+        return filename if os.path.exists(filename) else None
+    except Exception as e:
+        logger.error("Window download failed: %s", e)
+        return None
+
+def download_audio(url: str, start: float = 0.0, stream_url: Optional[str] = None):
+    """Returns (audio_path, stream_url). yt-dlp runs at most once per link;
+    extra windows reuse the resolved URL with ffmpeg only."""
+    if not stream_url:
+        if _cookies_configured_for(url):
+            stream_url = _resolve_stream_url(url, use_cookies=True)
+            if not stream_url:
+                logger.warning("Authenticated resolve failed. Trying cookieless...")
+                stream_url = _resolve_stream_url(url, use_cookies=False)
+        else:
+            stream_url = _resolve_stream_url(url, use_cookies=False)
+    if not stream_url:
+        return None, None
+    return _download_window(stream_url, start), stream_url
 
 def search_spotify_strict(track: str, artist: str) -> dict:
     """Search Spotify for a track, prioritizing exact artist matches and sorting by popularity."""
