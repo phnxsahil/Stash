@@ -1,9 +1,10 @@
 fastapi
 uvicorn
-yt-dlp
+yt-dlp==2026.8.19
+yt-dlp-ejs==0.8.0
 spotipy
 requests
-pydantic
+pydantic>=2,<3
 python-multipart
 python-dotenv
 shazamio
