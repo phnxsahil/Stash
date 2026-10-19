@@ -207,16 +207,29 @@ async def recognize_reel(req: ReelRequest, request: Request):
         else:
             raise HTTPException(status_code=500, detail=f"Backend Error: {error_msg}")
 
+def _cookies_configured_for(url: str) -> bool:
+    """True when a cookie pool exists for this URL's platform."""
+    is_youtube = 'youtube.com' in url or 'youtu.be' in url
+    is_instagram = 'instagram.com' in url
+    if is_youtube:
+        return bool(settings.YTDLP_COOKIES_YOUTUBE)
+    if is_instagram:
+        return bool(settings.YTDLP_COOKIES_INSTAGRAM)
+    return bool(settings.YTDLP_COOKIES_INSTAGRAM)
+
 def download_audio(url: str) -> Optional[str]:
-    """Downloads audio to /tmp. Tries without cookies first (public posts), then with cookies."""
+    """Downloads audio to /tmp. With cookies configured, go straight to them;
+    otherwise try cookieless first (public posts)."""
     
-    # Try WITHOUT cookies first (works for public posts)
-    result = _download_with_options(url, use_cookies=False)
-    
-    # If failed, retry WITH cookies (for private/restricted posts)
-    if not result:
-        logger.warning("Cookieless download failed. Retrying with authentication...")
+    if _cookies_configured_for(url):
+        # Authenticated first - on hosts where cookieless is blocked this
+        # skips a guaranteed-fail attempt that costs seconds.
         result = _download_with_options(url, use_cookies=True)
+        if not result:
+            logger.warning("Authenticated download failed. Trying cookieless...")
+            result = _download_with_options(url, use_cookies=False)
+    else:
+        result = _download_with_options(url, use_cookies=False)
     
     return result
 
@@ -234,9 +247,9 @@ def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]
             'quiet': False, 
             'no_warnings': False,
             'nocheckcertificate': True,
-            # SPEED: Only download first 15 seconds (Shazam identifies in ~5s)
-            'download_ranges': lambda info, ydl: [{'start_time': 0, 'end_time': 15}],
-            'force_keyframes_at_cuts': True,
+            # SPEED: Only download first 8 seconds (Shazam identifies in ~5s)
+            'download_ranges': lambda info, ydl: [{'start_time': 0, 'end_time': 8}],
+            'noplaylist': True,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
