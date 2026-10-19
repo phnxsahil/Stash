@@ -353,9 +353,10 @@ def try_metadata_fastpath(video_id: str) -> Optional[dict]:
         return None
     overlap = len(track_tokens & guess_tokens) / len(guess_tokens)
 
-    spotify_artist = (result.get('artist') or '').lower()
+    squash = lambda s: re.sub(r'[^a-z0-9]', '', s.lower())
     artist_ok = bool(artist_guess) and (
-        artist_guess.lower() in spotify_artist or spotify_artist in artist_guess.lower()
+        squash(artist_guess) in squash(result.get('artist') or '')
+        or squash(result.get('artist') or '') in squash(artist_guess)
     )
 
     # Strict: channel corroborates the artist AND titles strongly overlap.
