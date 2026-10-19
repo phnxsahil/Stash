@@ -249,8 +249,22 @@ async def recognize_reel(req: ReelRequest, request: Request):
         # Cleanup audio immediately
         if os.path.exists(audio_filename): os.remove(audio_filename)
 
-        # 3. PARSE SHAZAM RESULT
+        # 3. PARSE SHAZAM RESULT - if the opening window had no music
+        # (intro, silence, talk), retry once with a mid-song window.
         if not out.get('matches'):
+            logger.debug("No match in 0-8s window. Retrying 30-38s window...")
+            mid_filename = await loop.run_in_executor(None, download_audio, req.url, 30.0)
+            if mid_filename:
+                try:
+                    out = await shazam.recognize(mid_filename)
+                except Exception as mid_error:
+                    logger.warning("Mid-song retry failed: %s", mid_error)
+                    out = None
+                finally:
+                    if os.path.exists(mid_filename):
+                        try: os.remove(mid_filename)
+                        except OSError: pass
+        if not out or not out.get('matches'):
             logger.debug("Shazam found no matches.")
             return {"success": False, "error": "Could not identify song from audio"}
 
@@ -359,23 +373,23 @@ async def _cleanup_download(task) -> None:
     except Exception:
         pass
 
-def download_audio(url: str) -> Optional[str]:
-    """Downloads audio to /tmp. With cookies configured, go straight to them;
-    otherwise try cookieless first (public posts)."""
+def download_audio(url: str, start: float = 0.0) -> Optional[str]:
+    """Downloads an 8s audio window starting at `start` seconds.
+    With cookies configured, go straight to them; otherwise cookieless first."""
     
     if _cookies_configured_for(url):
         # Authenticated first - on hosts where cookieless is blocked this
         # skips a guaranteed-fail attempt that costs seconds.
-        result = _download_with_options(url, use_cookies=True)
+        result = _download_with_options(url, use_cookies=True, start=start)
         if not result:
             logger.warning("Authenticated download failed. Trying cookieless...")
-            result = _download_with_options(url, use_cookies=False)
+            result = _download_with_options(url, use_cookies=False, start=start)
     else:
-        result = _download_with_options(url, use_cookies=False)
+        result = _download_with_options(url, use_cookies=False, start=start)
     
     return result
 
-def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]:
+def _download_with_options(url: str, use_cookies: bool = False, start: float = 0.0) -> Optional[str]:
     """Internal function to download with or without cookies."""
     try:
         filename = f"/tmp/temp_{uuid4().hex}"
@@ -389,8 +403,8 @@ def _download_with_options(url: str, use_cookies: bool = False) -> Optional[str]
             'quiet': False, 
             'no_warnings': False,
             'nocheckcertificate': True,
-            # SPEED: Only download first 8 seconds (Shazam identifies in ~5s)
-            'download_ranges': lambda info, ydl: [{'start_time': 0, 'end_time': 8}],
+            # SPEED: Only download an 8 second window (Shazam identifies in ~5s)
+            'download_ranges': lambda info, ydl, s=start: [{'start_time': s, 'end_time': s + 8}],
             'noplaylist': True,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
