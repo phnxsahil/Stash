@@ -1,23 +1,22 @@
 FROM python:3.11-slim
 
-# Install ffmpeg
+# ffmpeg for audio extraction
 RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Deno: external JS runtime that yt-dlp (>=2025.11.12) needs to solve
+# YouTube's JS challenges. Without this YouTube extraction fails even
+# when the network path is fine.
+COPY --from=denoland/deno:bin-2.9.7 /deno /usr/local/bin/deno
+
 WORKDIR /app
 
-# Copy requirements first for better caching
 COPY requirements.backend.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.backend.txt
 
-# Copy application code
 COPY api ./api
 COPY main.py .
 
-# Expose port (Railway will set PORT env var)
 EXPOSE 8000
 
-# Run the application
+# Render sets PORT automatically; main.py already reads it
 CMD ["python", "main.py"]
