@@ -295,7 +295,7 @@ def _cookies_configured_for(url: str) -> bool:
     return bool(settings.YTDLP_COOKIES_INSTAGRAM)
 
 def _strip_brackets(text: str) -> str:
-    return re.sub(r'[\(\[][^^\)\]]*[\)\]]', ' ', text)
+    return re.sub(r'[\(\[][^\)\]]*[\)\]]', ' ', text)
 
 def _title_tokens(text: str) -> set:
     words = re.sub(r'[^a-z0-9 ]', ' ', text.lower()).split()
