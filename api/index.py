@@ -4,6 +4,7 @@ import json
 import glob
 import logging
 import random
+import re
 from uuid import uuid4
 import asyncio
 from functools import lru_cache
@@ -107,6 +108,52 @@ def health_check():
 # Rate limiting storage (in-memory for now)
 request_log = defaultdict(list)
 
+# --- Recognition cache (in-memory, per instance) ---
+RECOGNITION_CACHE_TTL = 7 * 86400  # 7 days
+_recognition_cache: dict = {}
+
+_YT_ID_RE = re.compile(r'^[A-Za-z0-9_-]{11}$')
+
+def normalize_source_key(url: str):
+    """Canonical cache key: 'youtube:<id>' or 'instagram:<shortcode>'.
+
+    YouTube: watch?v=, youtu.be/, /shorts/, /embed/, /v/, m./music.youtube.com
+    Instagram: /reel/, /reels/, /p/, /tv/
+    All tracking params (?igsh, &list=, &t=, &si=, ...) are ignored because we
+    only keep the ID.
+    """
+    try:
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(url.strip())
+        host = (parsed.hostname or '').lower()
+        if host.startswith('www.'):
+            host = host[4:]
+        path = parsed.path.rstrip('/')
+        qs = parse_qs(parsed.query)
+
+        if host in ('youtube.com', 'm.youtube.com', 'music.youtube.com'):
+            vid = (qs.get('v') or [None])[0]
+            if not vid:
+                for prefix in ('/shorts/', '/embed/', '/v/'):
+                    if path.startswith(prefix):
+                        vid = path[len(prefix):].split('/')[0]
+                        break
+            if vid and _YT_ID_RE.match(vid):
+                return f'youtube:{vid}'
+        elif host == 'youtu.be':
+            vid = path.lstrip('/').split('/')[0]
+            if vid and _YT_ID_RE.match(vid):
+                return f'youtube:{vid}'
+        elif host == 'instagram.com':
+            for prefix in ('/reel/', '/reels/', '/p/', '/tv/'):
+                if path.startswith(prefix):
+                    code = path[len(prefix):].split('/')[0]
+                    if code:
+                        return f'instagram:{code}'
+        return None
+    except Exception:
+        return None
+
 @app.post("/recognize")
 async def recognize_reel(req: ReelRequest, request: Request):
     # Get client IP for rate limiting
@@ -127,6 +174,14 @@ async def recognize_reel(req: ReelRequest, request: Request):
             detail=f"Daily limit reached ({settings.RATE_LIMIT_PER_DAY} reels/day). Upgrade to Pro for unlimited access!"
         )
     
+    # CACHE: instant return for a link recognized before.
+    # Placed before the append so cache hits don't burn the daily limit.
+    cache_key = normalize_source_key(req.url)
+    cached = _recognition_cache.get(cache_key) if cache_key else None
+    if cached and now - cached["ts"] < RECOGNITION_CACHE_TTL:
+        logger.debug("Cache hit: %s", cache_key)
+        return cached["result"]
+
     request_log[client_ip].append(now)
     
     logger.debug("Processing: %s (IP: %s, Count: %d)", req.url, client_ip, len(request_log[client_ip]))
@@ -188,7 +243,10 @@ async def recognize_reel(req: ReelRequest, request: Request):
 
         # 4. VERIFY WITH SPOTIFY (Get Playable URI)
         # We still search Spotify to get the URI for the frontend player/saving
-        return search_spotify_strict(shazam_title, shazam_artist)
+        result = search_spotify_strict(shazam_title, shazam_artist)
+        if cache_key and result and result.get("success"):
+            _recognition_cache[cache_key] = {"ts": time.time(), "result": result}
+        return result
 
     except Exception as e:
         error_msg = str(e)
