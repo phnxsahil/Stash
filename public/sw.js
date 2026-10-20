@@ -1,10 +1,13 @@
-const CACHE_VERSION = 'v11';
+const RELEASE_ID = '__BUILD_ID__';
+const CACHE_VERSION = RELEASE_ID.startsWith('__') ? 'dev' : RELEASE_ID;
 const STATIC_CACHE = `stash-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `stash-runtime-${CACHE_VERSION}`;
-const IS_LOCALHOST =
-  self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
-const PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/logo-512.png', '/offline.html', '/stash-logo.svg', '/fonts/plus-jakarta-sans.woff2', '/fonts/material-symbols-outlined.woff2'];
+const DEFAULT_PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/logo-512.png', '/offline.html', '/stash-logo.svg', '/fonts/plus-jakarta-sans.woff2', '/fonts/material-symbols-outlined.woff2'];
+const PRECACHE_MANIFEST_JSON = '__PRECACHE_MANIFEST_JSON__';
+const PRECACHE_ASSETS = PRECACHE_MANIFEST_JSON.startsWith('[')
+  ? JSON.parse(PRECACHE_MANIFEST_JSON)
+  : DEFAULT_PRECACHE_ASSETS;
 
 const NETWORK_ONLY_PATTERNS = [/\/api\//i, /\/auth\/v1\//i, /\/rest\/v1\//i, /\/recognize$/i, /\/save_track$/i, /\/remove_track$/i];
 
@@ -15,37 +18,21 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('install', (event) => {
-  if (IS_LOCALHOST) {
-    event.waitUntil(self.skipWaiting());
-    return;
-  }
-
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
       .then((cache) => cache.addAll(PRECACHE_ASSETS))
-      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
-  if (IS_LOCALHOST) {
-    event.waitUntil(
-      caches
-        .keys()
-        .then((cacheNames) => Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName))))
-        .then(() => self.registration.unregister())
-    );
-    return;
-  }
-
   event.waitUntil(
     caches
       .keys()
       .then((cacheNames) =>
         Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== RUNTIME_CACHE) {
+            if ((cacheName.startsWith('stash-static-') || cacheName.startsWith('stash-runtime-')) && cacheName !== STATIC_CACHE && cacheName !== RUNTIME_CACHE) {
               return caches.delete(cacheName);
             }
             return Promise.resolve(false);
@@ -66,8 +53,6 @@ const isStaticAssetRequest = (request) =>
   request.destination === 'manifest';
 
 self.addEventListener('fetch', (event) => {
-  if (IS_LOCALHOST) return;
-
   const { request } = event;
   if (request.method !== 'GET') return;
 
@@ -76,19 +61,20 @@ self.addEventListener('fetch', (event) => {
   if (isNetworkOnlyRequest(request)) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, responseClone));
-          return response;
-        })
-        .catch(async () => {
-          const cachedPage = await caches.match(request);
-          if (cachedPage) return cachedPage;
-          return caches.match('/offline.html');
-        })
-    );
+    event.respondWith((async () => {
+      const cachedShell = await caches.match('/index.html') || await caches.match(request);
+      const refreshShell = fetch(request).then((response) => {
+        if (!response.ok) return null;
+        const responseClone = response.clone();
+        return caches.open(RUNTIME_CACHE).then((cache) => cache.put('/index.html', responseClone)).then(() => response);
+      }).catch(() => null);
+      if (cachedShell) {
+        event.waitUntil(refreshShell);
+        return cachedShell;
+      }
+      const networkResponse = await refreshShell;
+      return networkResponse || await caches.match('/offline.html');
+    })());
     return;
   }
 

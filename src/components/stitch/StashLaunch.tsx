@@ -15,20 +15,41 @@ export function StashLaunch() {
     const dismiss = () => setVisible(false);
     const onMotionChange = () => { if (reduced.matches) dismiss(); };
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') dismiss(); };
-    const target = Array.from(document.querySelectorAll<HTMLElement>('header .st-logo img, .st-sidebar .st-logo img, .st-topbar .st-logo img'))
+    const findTarget = () => Array.from(document.querySelectorAll<HTMLElement>('header .st-logo img, .st-sidebar .st-logo img, .st-topbar .st-logo img'))
       .map(element => element.getBoundingClientRect())
       .find(rect => rect.width > 0 && rect.top >= 0 && rect.bottom <= window.innerHeight);
-    if (!target) { dismiss(); return; }
-    mark.current.style.transform = `translate(${target.x}px, ${target.y}px) scale(${target.width / 96})`;
-    const drawing = cut.current.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 520, delay: 80, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'both' });
-    const background = overlay.current.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, delay: 520, fill: 'both' });
-    const dismissTimer = window.setTimeout(dismiss, 860);
+    const startedAt = performance.now();
+    let drawing: Animation | null = null;
+    let background: Animation | null = null;
+    let dismissTimer = 0;
+    let retryTimer = 0;
+    const start = (target?: DOMRect) => {
+      if (drawing) return;
+      const size = Math.min(window.innerWidth, window.innerHeight) * 0.18;
+      const x = target?.x ?? (window.innerWidth - size) / 2;
+      const y = target?.y ?? (window.innerHeight - size) / 2;
+      const scale = target ? target.width / 96 : size / 96;
+      mark.current!.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+      drawing = cut.current!.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 460, delay: 60, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'both' });
+      background = overlay.current!.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: 480, fill: 'both' });
+      dismissTimer = window.setTimeout(dismiss, 820);
+    };
+    const seekTarget = () => {
+      const target = findTarget();
+      if (target || performance.now() - startedAt >= 420) {
+        start(target);
+        return;
+      }
+      retryTimer = window.setTimeout(seekTarget, 40);
+    };
+    seekTarget();
     reduced.addEventListener('change', onMotionChange);
     window.addEventListener('pointerdown', dismiss, { once: true });
     window.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(dismissTimer);
-      drawing.cancel(); background.cancel();
+      window.clearTimeout(retryTimer);
+      drawing?.cancel(); background?.cancel();
       reduced.removeEventListener('change', onMotionChange);
       window.removeEventListener('pointerdown', dismiss);
       window.removeEventListener('keydown', onKey);
