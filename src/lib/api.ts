@@ -369,6 +369,48 @@ export const api = {
     if (error) throw error;
   },
 
+  /**
+   * Targeted existence check used by the offline outbox before replaying a
+   * queued save/delete. Queries the server directly (not the loaded,
+   * possibly stale or paginated local list): a save is a duplicate when a
+   * row with the same song+artist or spotify_url already exists for this
+   * user, a delete is a duplicate when the row is already gone.
+   */
+  async findHistoryEntry(query: { id?: string; song?: string; artist?: string; spotifyUrl?: string }): Promise<{ found: boolean }> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) return { found: false };
+
+    if (query.id) {
+      const { data, error } = await supabase
+        .from('history')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('id', query.id)
+        .limit(1);
+      if (error) throw error;
+      return { found: (data?.length || 0) > 0 };
+    }
+
+    if (query.song && query.artist) {
+      const { data, error } = await supabase
+        .from('history')
+        .select('id, spotify_url')
+        .eq('user_id', user.id)
+        .ilike('song', query.song)
+        .ilike('artist', query.artist)
+        .limit(5);
+      if (error) throw error;
+      const rows = data || [];
+      if (query.spotifyUrl) {
+        return { found: rows.some((r) => r.spotify_url === query.spotifyUrl) || rows.length > 0 };
+      }
+      return { found: rows.length > 0 };
+    }
+
+    return { found: false };
+  },
+
   async removeFromSpotify(trackId: string, playlistId?: string): Promise<void> {
     const token = await this.getSpotifyToken();
     if (!token) {
