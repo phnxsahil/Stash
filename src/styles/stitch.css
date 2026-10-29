@@ -375,3 +375,63 @@
 .stitch-theme .st-settings-select{min-height:44px!important}
 .stitch-theme .st-stats-share{min-width:44px!important;min-height:44px!important}
 .stitch-theme a:not(.st-skip):not([href="#how-it-works"]){display:inline-flex;align-items:center;min-height:44px;min-width:44px;max-width:100%;overflow-wrap:anywhere}
+
+/* Insights panel (listening personality) */
+.st-insights{margin:0 0 var(--st-space-lg);padding:var(--st-space-lg);background:var(--st-low);border:1px solid var(--st-border);border-radius:var(--st-radius-lg);box-shadow:var(--st-shadow)}
+.st-insights-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:var(--st-space-md)}
+.st-insights-kicker{font-size:var(--st-text-label);letter-spacing:.14em;text-transform:uppercase;color:var(--st-secondary)}
+.st-insights-peak{font-size:var(--st-text-caption);color:var(--st-action);font-weight:600}
+.st-insights-strip{display:flex;align-items:flex-end;gap:3px;height:56px}
+.st-insights-bar{flex:1;height:100%;transform-origin:bottom;background:var(--st-high);border-radius:3px 3px 0 0}
+.st-insights-bar.is-peak{background:var(--st-action)}
+.st-insights-hours{display:flex;justify-content:space-between;font-size:10px;color:var(--st-secondary);margin-top:6px;font-variant-numeric:tabular-nums}
+.st-insights-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--st-space-md)}
+.st-insights-facts span{font-size:var(--st-text-caption);color:var(--st-secondary);background:var(--st-container);border-radius:var(--st-pill);padding:4px 10px}
+
+/* Pending sync badge */
+.st-pending-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--st-secondary);background:var(--st-container);border-radius:var(--st-pill);padding:3px 8px}
+.st-pending-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--st-action);opacity:.7}
+
+/* Demo mode banner */
+.st-demo-banner{margin:0 0 var(--st-space-md);padding:10px 14px;font-size:var(--st-text-caption);color:var(--st-action-text);background:var(--st-action);border-radius:var(--st-radius-md);font-weight:600;text-align:center}
+
+/* Failed outbox operations: visible, retryable, cancellable. Never silent. */
+.st-failed-ops {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: min(92vw, 34rem);
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, #e5484d 35%, transparent);
+  background: color-mix(in srgb, #1a1112 92%, transparent);
+  color: #f5d7d8;
+  font-size: 0.85rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.35);
+}
+.st-failed-ops-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.st-failed-ops-actions button {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, #f5d7d8 40%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.st-failed-ops-actions button:first-child {
+  background: #e5484d;
+  border-color: #e5484d;
+  color: #fff;
+                            }
