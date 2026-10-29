@@ -13,6 +13,7 @@ interface HistoryListProps {
   error?: string;
   onRefresh?: () => Promise<void>;
   onCapture?: () => void;
+  pendingIds?: Set<string>;
 }
 
 const sourceLabel = (source: string) => (({ Instagram: 'Reels', YouTube: 'Shorts' } as Record<string, string>)[source] || source || 'Link');
@@ -28,7 +29,7 @@ function stashDate(value?: string) {
   return {label,full:date.toLocaleString()};
 }
 
-function TrackCard({ song, index, onDeleteSong }: { song: Song; index: number; onDeleteSong: (id:string)=>void }) {
+function TrackCard({ song, index, onDeleteSong, pending }: { song: Song; index: number; onDeleteSong: (id:string)=>void; pending?: boolean }) {
   const reduced = useReducedMotion();
   const date = stashDate(song.created_at);
   const spotifyUrl = song.spotify_url?.startsWith('https://open.spotify.com/') ? song.spotify_url : undefined;
@@ -38,7 +39,7 @@ function TrackCard({ song, index, onDeleteSong }: { song: Song; index: number; o
     <TrackArtwork url={song.album_art_url} />
     <div className="st-track-details">
       <h3 title={song.song}>{song.song}</h3><p title={song.artist}>{song.artist}</p>
-      <div className="st-track-meta">{isSupportedSource(song.source) && <><span className={`st-source-badge st-source-${(song.source || 'link').toLowerCase()}`}><Icon name={sourceIcon(song.source)} size={11} />{sourceLabel(song.source)}</span><span aria-hidden="true">·</span></>}<time dateTime={song.created_at} title={date.full}>{relativeStashDate(song.created_at) || date.label}</time></div>
+      <div className="st-track-meta">{pending && <><span className="st-pending-badge">Pending sync</span><span aria-hidden="true">·</span></>}{isSupportedSource(song.source) && <><span className={`st-source-badge st-source-${(song.source || 'link').toLowerCase()}`}><Icon name={sourceIcon(song.source)} size={11} />{sourceLabel(song.source)}</span><span aria-hidden="true">·</span></>}<time dateTime={song.created_at} title={date.full}>{relativeStashDate(song.created_at) || date.label}</time></div>
     </div>
     <div className="st-track-actions">
       {spotifyUrl && <a href={spotifyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${song.song} in Spotify`}><Icon name="open_in_new" size={19} aria-hidden="true" /></a>}
@@ -59,7 +60,7 @@ function TrackCard({ song, index, onDeleteSong }: { song: Song; index: number; o
   </motion.article>;
 }
 
-export function HistoryList({ history, onDeleteSong, isLoading = false, error, onRefresh, onCapture }: HistoryListProps) {
+export function HistoryList({ history, onDeleteSong, isLoading = false, error, onRefresh, onCapture, pendingIds }: HistoryListProps) {
   const [query, setQuery] = useState('');
   const [source, setSource] = useState('All sources');
   const [sort, setSort] = useState('newest');
@@ -128,8 +129,8 @@ export function HistoryList({ history, onDeleteSong, isLoading = false, error, o
       {isLoading && !history.length ? <div className="st-track-list" aria-label="Loading songs">{Array.from({length:6},(_,index)=><div className="st-track-row st-track-skeleton" key={index} aria-hidden="true"><div className="track-artwork capture-shimmer" /><div className="st-track-details"><div className="capture-shimmer" /><div className="capture-shimmer" /><div className="capture-shimmer" /></div></div>)}</div>
         : !history.length && !error ? <div className="st-library-empty"><div className="empty-records" aria-hidden="true"><Icon name="album" /></div><h2>Your best finds are still ahead.</h2><p>That song stuck in your head? Give it a home.<br />Paste your first link and start your collection.</p><button className="st-button st-button-primary" onClick={onCapture}>Find your first song <Icon name="open_in_new" size={18} /></button></div>
         : history.length > 0 && !filtered.length ? <div className="st-library-empty search-empty"><Icon name="search" size={32} aria-hidden="true" /><h2>No songs found.</h2><p>Try another title, artist, or source.</p><button className="st-button st-button-secondary" onClick={()=>{setQuery('');setSource('All sources');}}>Clear filters</button></div>
-        : <div className="st-track-list"><AnimatePresence initial={false}>{filtered.map((song,index)=><TrackCard key={song.id} song={song} index={index} onDeleteSong={onDeleteSong} />)}</AnimatePresence></div>}
+        : <div className="st-track-list"><AnimatePresence initial={false}>{filtered.map((song,index)=><TrackCard key={song.id} song={song} index={index} onDeleteSong={onDeleteSong}  pending={pendingIds?.has(song.id)} />)}</AnimatePresence></div>}
     </motion.div>
     {history.length > 0 && filtered.length > 0 && <p className="st-library-end"><Icon name="check" size={14} aria-hidden="true" /> Library up to date</p>}
   </section>;
-}
+      }
