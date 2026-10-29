@@ -13,10 +13,12 @@ import LoadingSkeleton from './components/LoadingSkeleton';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { api } from './lib/api';
+import { createOutbox, type OutboxEntry, type OutboxOperation } from './lib/outbox';
+import { DEMO_MODE, buildDemoHistory } from './lib/demo';
 import { supabase } from './lib/supabase';
 import { logger } from './lib/logger';
 import { calculateStreak } from './lib/analytics';
-import type { AppState, ViewType, SongMatch, Theme } from './types';
+import type { AppState, ViewType, Song, SongMatch, Theme } from './types';
 
 // Lazy-loaded views (only fetched when navigated to)
 const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
@@ -105,6 +107,10 @@ export default function App() {
 
   const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState('');
+  const outboxRef = useRef(createOutbox());
+  const [pendingSongIds, setPendingSongIds] = useState<Set<string>>(new Set());
+  const [pendingOpsCount, setPendingOpsCount] = useState(0);
+  const [failedOps, setFailedOps] = useState<OutboxEntry[]>([]);
   const sharedUrlRef = useRef<string | null>(null);
   const sharedSubmissionRef = useRef<string | null>(null);
   const stashSubmitRef = useRef<((url: string, options?: StashSubmitOptions) => Promise<void>) | null>(null);
@@ -176,8 +182,26 @@ export default function App() {
       });
   }, [pendingSharedUrl, state.isLoggedIn, state.isProcessing]);
 
+  // Demo mode: skip auth, load sample history (clearly labelled in the UI).
+  useEffect(() => {
+    if (!DEMO_MODE) return;
+    outboxRef.current.setAccount('demo@stash.local');
+    setState((prev) => ({
+      ...prev,
+      isLoggedIn: true,
+      userName: 'Demo',
+      userEmail: 'demo@stash.local',
+      currentView: 'app',
+      history: buildDemoHistory(),
+      playlists: [{ id: 'stash_playlist', name: 'Stash playlist' }],
+      defaultPlaylistId: 'stash_playlist',
+      hasSpotifyToken: false,
+    }));
+  }, []);
+
   // Handle Auth Session
   useEffect(() => {
+    if (DEMO_MODE) return;
     const checkSession = async () => {
       logger.log('🔐 Checking auth session...');
       const { data: { session } } = await supabase.auth.getSession();
@@ -202,6 +226,7 @@ export default function App() {
 
   const handleAuthSuccess = async (user: any) => {
     logger.log('✅ Auth success! User:', user.email);
+    outboxRef.current.setAccount(user.email || user.id || 'anonymous');
     const token = await api.getSpotifyToken();
 
     setState((prev) => ({
@@ -266,6 +291,7 @@ export default function App() {
   }, [state.theme]);
 
   const loadHistory = async () => {
+    if (DEMO_MODE) { setState((prev) => ({ ...prev, isLoadingHistory: false })); return; }
     setHistoryError('');
     setState((prev) => ({ ...prev, isLoadingHistory: true }));
     try {
@@ -291,6 +317,8 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await api.logoutUser();
+      outboxRef.current.setAccount('anonymous');
+      setFailedOps([]);
       setHistoryError('');
       setAppTab('capture');
       setState(createDefaultState(state.theme));
@@ -301,7 +329,114 @@ export default function App() {
     }
   }, [state.theme]);
 
+  const refreshPendingEchoes = async () => {
+    const entries = await outboxRef.current.pending();
+    setPendingOpsCount(entries.length);
+    setPendingSongIds(new Set(
+      entries.filter((e) => e.op.kind === 'save').map((e) => (e.op as { kind: 'save'; song: Song }).song.id)
+    ));
+    setFailedOps(await outboxRef.current.failed());
+  };
+
+  const handleRetryFailedOp = async (id: string) => {
+    await outboxRef.current.retry(id);
+    await refreshPendingEchoes();
+    toast.message('Queued for another sync attempt.');
+    void syncOutbox();
+  };
+
+  const handleCancelFailedOp = async (id: string) => {
+    await outboxRef.current.cancel(id);
+    await refreshPendingEchoes();
+    toast.message('Removed from the sync queue.');
+  };
+
+  const syncInFlightRef = useRef(false);
+  const syncOutbox = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    if (syncInFlightRef.current) return; // one replay at a time - no interleaved double-apply
+    syncInFlightRef.current = true;
+    try {
+      const isDuplicate = async (op: OutboxOperation): Promise<boolean> => {
+        // Ask the server directly (the loaded history list can be stale or
+        // incomplete). If the check itself fails we throw, so the entry is
+        // retried later rather than applied blindly.
+        if (op.kind === 'save') {
+          const { found } = await api.findHistoryEntry({
+            song: op.song.song,
+            artist: op.song.artist,
+            spotifyUrl: op.song.spotify_url,
+          });
+          return found;
+        }
+        const { found } = await api.findHistoryEntry({ id: op.songId });
+        return !found; // delete already reflected when the row is gone
+      };
+      const { synced, skippedDuplicates, failed, authNeeded } = await outboxRef.current.process(async (op: OutboxOperation) => {
+        if (op.kind === 'save') {
+          const { created_at: _ts, source, ...match } = op.song;
+          await api.addTrack(match, source || 'Web', op.playlistId);
+        } else {
+          await api.deleteSong(op.songId);
+        }
+      }, { isDuplicate });
+      if (authNeeded) {
+        toast.error('Your session expired. Sign in again and your queued changes will sync - nothing was lost.');
+      }
+      if (synced > 0) {
+        toast.success(synced === 1 ? 'Back online. 1 song synced.' : `Back online. ${synced} songs synced.`);
+        await loadHistory();
+      }
+      if (skippedDuplicates > 0) {
+        toast.message(skippedDuplicates === 1 ? '1 queued song was already saved - skipped the duplicate.' : `${skippedDuplicates} queued songs were already saved - skipped the duplicates.`);
+      }
+      const permanent = failed.filter((f) => f.status === 'failed');
+      const retrying = failed.filter((f) => f.status === 'pending');
+      if (permanent.length > 0) {
+        toast.error(permanent.length === 1
+          ? "A queued change can't sync (it was rejected, not a network issue). It's kept below - retry it or discard it."
+          : `${permanent.length} queued changes can't sync (rejected, not a network issue). They're kept below - retry or discard them.`);
+      } else if (retrying.length > 0) {
+        toast.error("Couldn't reach Stash. Queued changes will retry automatically.");
+      }
+      await refreshPendingEchoes();
+    } catch (err) {
+      logger.error('Outbox sync failed:', err);
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    refreshPendingEchoes();
+    const onOnline = () => { if (state.isLoggedIn) syncOutbox(); };
+    window.addEventListener('online', onOnline);
+    const interval = window.setInterval(() => { if (state.isLoggedIn) syncOutbox(); }, 45000);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.clearInterval(interval);
+    };
+  }, [state.isLoggedIn]);
+
   const handleStashSubmit = async (url: string, options?: StashSubmitOptions) => {
+    if (DEMO_MODE) {
+      setState((prev) => ({
+        ...prev,
+        currentUrl: url,
+        isProcessing: true,
+        processingStage: 2,
+        processingError: undefined,
+      }));
+      window.setTimeout(() => {
+        setState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          processingStage: 'error',
+          processingError: 'Demo mode: recognition runs on the live app. Connect Spotify on the real Stash to stash this song.',
+        }));
+      }, 1400);
+      return;
+    }
     try {
       if (options?.source === 'share-target') {
         sharedUrlRef.current = null;
@@ -359,9 +494,10 @@ export default function App() {
   stashSubmitRef.current = handleStashSubmit;
 
   const handleSongSelection = async (song: SongMatch, sourceUrl = state.currentUrl) => {
+    setState((prev) => ({ ...prev, showModal: false }));
+    const source = extractSource(sourceUrl);
     try {
-      setState((prev) => ({ ...prev, showModal: false }));
-      const source = extractSource(sourceUrl);      const { song: newSong } = await api.addTrack(song, source);
+      const { song: newSong } = await api.addTrack(song, source);
       setSavedCapture(previous => ({ url: sourceUrl, version: (previous?.version || 0) + 1 }));
 
       setState((prev) => ({
@@ -377,7 +513,31 @@ export default function App() {
       toast.success(`"${song.song}" added to your library!`);
     } catch (error) {
       logger.error('Failed to add track:', error);
-      toast.error('Failed to add song to library');
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const networkish = error instanceof Error && /failed to fetch|networkerror|load failed|timed? ?out/i.test(error.message);
+      if (offline || networkish) {
+        const localSong: Song = {
+          id: `local-${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Date.now()}`,
+          song: song.song,
+          artist: song.artist,
+          source,
+          album_art_url: song.album_art_url,
+          preview_url: song.preview_url,
+          spotify_url: song.spotify_url,
+          created_at: new Date().toISOString(),
+        };
+        await outboxRef.current.enqueue({ kind: 'save', song: localSong });
+        setState((prev) => ({
+          ...prev,
+          history: [localSong, ...prev.history],
+          currentMatches: [],
+          currentUrl: '',
+        }));
+        await refreshPendingEchoes();
+        toast('Saved offline. It will sync to Spotify when you are back online.', { icon: '📥' });
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Failed to add song to library');
+      }
     }
   };
 
@@ -407,7 +567,17 @@ export default function App() {
       toast.success('Song removed from Spotify and history');
     } catch (error) {
       logger.error('Failed to delete song:', error);
-      toast.error('Failed to delete song');
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const networkish = error instanceof Error && /failed to fetch|networkerror|load failed|timed? ?out/i.test(error.message);
+      const song = state.history.find(s => s.id === id);
+      if ((offline || networkish) && song) {
+        await outboxRef.current.enqueue({ kind: 'delete', songId: id, spotifyTrackId: song.spotify_url?.split('/').pop()?.split('?')[0] });
+        setState((prev) => ({ ...prev, history: prev.history.filter((sg) => sg.id !== id) }));
+        await refreshPendingEchoes();
+        toast('Delete queued. It will sync when you are back online.', { icon: '📥' });
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : 'Failed to delete song');
     }
   };
 
@@ -544,6 +714,7 @@ export default function App() {
             theme={state.theme}
             onLogout={handleLogout}
             savedCapture={savedCapture}
+            pendingSongIds={pendingSongIds}
             onStashSubmit={handleStashSubmit}
             onDeleteSong={handleDeleteSong}
             onToggleAutoAdd={handleToggleAutoAdd}
@@ -608,6 +779,20 @@ export default function App() {
             handleStashSubmit(state.currentUrl);
           }}
         />
+        {failedOps.length > 0 && (
+          <div className="st-failed-ops" role="alert">
+            <div className="st-failed-ops-text">
+              {failedOps.length === 1
+                ? `Couldn't sync "${failedOps[0].op.kind === 'save' ? (failedOps[0].op as { kind: 'save'; song: Song }).song.song : 'a delete'}". Nothing was lost.`
+                : `${failedOps.length} queued changes couldn't sync. Nothing was lost.`}
+            </div>
+            <div className="st-failed-ops-actions">
+              <button type="button" onClick={() => void handleRetryFailedOp(failedOps[0].id)}>Retry</button>
+              <button type="button" onClick={() => void handleCancelFailedOp(failedOps[0].id)}>Discard</button>
+            </div>
+          </div>
+        )}
+
         <PWAInstallPrompt />
         <PWARegistration />
         <StashLaunch />
@@ -617,4 +802,4 @@ export default function App() {
       </MotionConfig>
     </ErrorBoundary>
   );
-}
+              }
