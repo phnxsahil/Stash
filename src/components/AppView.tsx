@@ -6,6 +6,7 @@ import { Playlist, Song } from '../lib/api';
 import '../styles/library.css';
 import { StashShell } from './stitch/StashShell';
 import { AchievementBanner } from './AchievementBanner';
+import { DEMO_MODE } from '../lib/demo';
 
 interface AppViewProps {
   initialTab?: 'capture' | 'library';
@@ -31,15 +32,17 @@ interface AppViewProps {
   pendingSharedUrl?: string | null;
   savedCapture?: SavedCapture | null;
   hasSpotifyToken?: boolean;
+  pendingSongIds?: Set<string>;
 }
 
-export function AppView({initialTab = 'capture',onTabChange,userName,history,songsThisWeek,streak,isLoadingHistory,historyError,onRefreshHistory,autoAddTopMatch,defaultPlaylistId,playlists,theme,onLogout,onStashSubmit,onDeleteSong,onToggleAutoAdd,onToggleTheme,onOpenSettings,onOpenStats,pendingSharedUrl,savedCapture,hasSpotifyToken}: AppViewProps) {
+export function AppView({initialTab = 'capture',onTabChange,userName,history,songsThisWeek,streak,isLoadingHistory,historyError,onRefreshHistory,autoAddTopMatch,defaultPlaylistId,playlists,theme,onLogout,onStashSubmit,onDeleteSong,onToggleAutoAdd,onToggleTheme,onOpenSettings,onOpenStats,pendingSharedUrl,savedCapture,hasSpotifyToken,pendingSongIds}: AppViewProps) {
   const [view, setView] = useState<'capture'|'library'>(initialTab);
   const destinationName = playlists.find(playlist=>playlist.id===defaultPlaylistId)?.name || (defaultPlaylistId==='stash_playlist' ? 'Stash playlist' : 'Liked Songs');
   useEffect(()=>{if(pendingSharedUrl) { setView('capture'); onTabChange?.('capture'); }},[pendingSharedUrl,onTabChange]);
   const navigate = (next:'capture'|'library') => { setView(next); onTabChange?.(next); window.scrollTo({top:0,behavior:'instant'}); };
 
   return <StashShell active={view} userName={userName} connected={hasSpotifyToken} theme={theme} onToggleTheme={onToggleTheme} onLogout={onLogout} autoAddTopMatch={autoAddTopMatch} onToggleAutoAdd={onToggleAutoAdd} onNavigate={destination => destination === 'settings' ? onOpenSettings() : destination === 'stats' ? onOpenStats() : navigate(destination)}>
+    {DEMO_MODE && <div className="st-demo-banner" role="note">Demo mode - sample data. Connect Spotify on the live app to stash for real.</div>}
     {!isLoadingHistory && !historyError && <AchievementBanner totalSongs={history.length} />}
     <section hidden={view !== 'capture'} aria-label="Capture a song">
       <CapturePanel connected savedCapture={savedCapture} onSubmit={onStashSubmit} pendingSharedUrl={pendingSharedUrl} destinationName={destinationName} onChangeDestination={onOpenSettings} recentSong={history[0]} />
@@ -47,7 +50,7 @@ export function AppView({initialTab = 'capture',onTabChange,userName,history,son
     <section hidden={view !== 'library'} className="st-library-content" aria-label="Your library">
       <header className="st-library-heading"><div><h1>Your library</h1></div><p>The songs you found. The ones you kept.</p></header>
       <QuickStats totalSongs={history.length} songsThisWeek={songsThisWeek} streak={streak} onClick={onOpenStats} isLoading={isLoadingHistory && !history.length} unavailable={!!historyError && !history.length} />
-      <HistoryList history={history} onDeleteSong={onDeleteSong} isLoading={isLoadingHistory} error={historyError} onRefresh={onRefreshHistory} onCapture={() => navigate('capture')} />
+      <HistoryList history={history} onDeleteSong={onDeleteSong} isLoading={isLoadingHistory} error={historyError} onRefresh={onRefreshHistory} onCapture={() => navigate('capture')} pendingIds={pendingSongIds} />
     </section>
   </StashShell>;
 }
