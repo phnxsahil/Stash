@@ -1,6 +1,7 @@
 import { Trophy, Sparkles, Music } from './stitch/StashIcons';
 import { InstagramExport } from './InstagramExport';
 import { StatsScreen } from './stitch/StatsScreen';
+import { InsightsPanel } from './InsightsPanel';
 import { useEffect, useState } from 'react';
 import { Song, Playlist, api } from '../lib/api';
 
@@ -67,5 +68,8 @@ export function StatsView({ history, userName, songsThisWeek, streak, playlists 
     }
   }, [history]);
 
-  return <StatsScreen history={history} vibe={vibe} songsThisWeek={songsThisWeek} streak={streak} genreData={genreData} topArtists={topArtists} achievements={achievements} playlists={playlists} defaultPlaylistId={defaultPlaylistId} exportControl={<InstagramExport totalSongs={history.length} genreData={genreData} topArtists={topArtists} streak={streak} compact />} />;
+  return <>
+    <InsightsPanel history={history} />
+    <StatsScreen history={history} vibe={vibe} songsThisWeek={songsThisWeek} streak={streak} genreData={genreData} topArtists={topArtists} achievements={achievements} playlists={playlists} defaultPlaylistId={defaultPlaylistId} exportControl={<InstagramExport totalSongs={history.length} genreData={genreData} topArtists={topArtists} streak={streak} compact />} />
+  </>;
 }
